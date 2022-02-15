@@ -32,7 +32,12 @@ classdef RabbitBuiltIn < CtrlAffineSysFL
             obj.theta_init = obj.params.theta_init;
             obj.theta_end = obj.params.theta_end;
             obj.a_bez = obj.params.a_bez;
-            obj.gamma_b = obj.params.gamma_b;
+            if isfield(params, 'gamma_b')
+                obj.gamma_b = obj.params.gamma_b;
+                obj.n_cbf = 2;
+            else
+                obj.n_cbf = 0;
+            end
             if isfield(params, 'steps_min')
                 obj.steps_min = params.steps_min;
                 if isfield(params, 'steps_max')

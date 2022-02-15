@@ -144,6 +144,7 @@ result.trajectory = xs;
 result.stamps = ts;
 result.controls = us;
 result.forces = extras.forces;
+result.legend = "Stepping Stone (CBF)";
 plot_rabbit_state_history(result);
 % plot_rabbit_result(xs, ts, us, extras);
 

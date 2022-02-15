@@ -10,7 +10,7 @@ params.p_o = [5; 2];
 % obstacle radius.
 params.r_o = 2; 
 
-dt = 0.02;
+dt = 0.002;
 sim_t = 30;
 
 params.cbf_gamma0 = 1;

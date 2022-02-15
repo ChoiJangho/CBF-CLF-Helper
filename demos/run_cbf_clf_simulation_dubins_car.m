@@ -1,7 +1,7 @@
 %% Example for multiple CBF constraints.
 clear all;
 close all;
-dt = 0.02;
+dt = 0.0005a;
 sim_t = 20;
 x0 = [0;5;0];
 
@@ -33,7 +33,7 @@ controller = @(x, varargin) dubins.ctrlCbfClfQp(x, ...
     'weight_slack', [params.weight_slack, weight_slack_for_cbfs], varargin{:});
 
 [xs, us, ts, extraout] = rollout_controller( ...
-    x0, dubins, dubins, controller, sim_t);
+    x0, dubins, dubins, controller, sim_t, 'dt', dt);
 Bs = extraout.Bs;
 plot_results(ts, xs, us, Bs, [params.xo;params.yo], params.d)
 
