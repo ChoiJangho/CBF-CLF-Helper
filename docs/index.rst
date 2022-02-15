@@ -41,6 +41,7 @@ testing
 -------
 .. mat:automodule:: lib.@CtrlAffineSys
 .. mat:autoclass:: CtrlAffineSys
+.. mat:autoattribute:: u_max
 
 .. Links
 .. _Symbolic Math Toolbox: https://www.mathworks.com/products/symbolic.html
