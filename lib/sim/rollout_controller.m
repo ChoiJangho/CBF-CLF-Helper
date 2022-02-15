@@ -24,7 +24,7 @@ function [xs, us, ts, extraout] = rollout_controller( ...
 %   plant_sys: ControlAffineSys instance for the plant simulation.
 %   control_sys: ControlAffineSys instance for the model and the controller.
 %   controller: function handle for controller.
-%       examples: ctrlClfQp, ctrlCbfQp, ctrlCbfClfQp
+%       examples: ctrlClf, ctrlCbfQp, ctrlCbfClfQp
 %   T: simulation time (time horizon)
 %% Supported fields for varargin
 %   SIMULATION OPTIONS:
