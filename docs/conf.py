@@ -11,7 +11,10 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+import sys
 from pathlib import Path
+sys.path.append('.')
+from github_linkcode import github_linkcode_resolve
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 # sys.path.insert(0, os.path.abspath('../
@@ -31,6 +34,8 @@ author = 'Jason Choi'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.linkcode',
     'sphinxcontrib.matlab'
 ]
 
@@ -59,3 +64,20 @@ html_static_path = ['_static']
 matlab_keep_package_prefix = False
 matlab_src_dir = os.path.dirname(os.path.abspath('.'))
 primary_domain = 'mat'
+autodoc_member_order = 'bysource'
+# autoclass_content = 'init'
+
+# Napoleon
+napoleon_use_rtype = False
+
+# Linking to source code
+def linkcode_resolve(domain, info):
+    return github_linkcode_resolve(
+        domain=domain,
+        info=info,
+        allowed_module_names=[matlab_src_dir],
+        github_org_id='ChoiJangho',
+        github_repo_id='CBF-CLF-Helper',
+        branch='RABBIT',
+        source_prefix=''
+        )

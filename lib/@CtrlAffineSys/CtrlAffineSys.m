@@ -1,37 +1,33 @@
 %% Author: Jason Choi (jason.choi@berkeley.edu)
 classdef CtrlAffineSys < handle    
     %% Control-Affine Dynamic System Class.
+    % More comments may be present in source code
+
     properties
-        % Set-up option: 'symbolic', 'built-in'
-        setup_option
+        setup_option % Set-up option: 'symbolic', 'built-in'
                 
-        % necessary parameters
-        % rate used in the clf constraint.
-        clf_rate
-        % rate used in the cbf constraint.
-        cbf_rate
-        % max bound of control input.
-        u_max
-        % min bound of control input.
-        u_min
+        %% necessary parameters
+
+        clf_rate % rate used in the clf constraint.
+        cbf_rate % rate used in the cbf constraint.
+
+        u_max % max bound of control input.
+        u_min % min bound of control input.
                 
-        % State dimension
-        xdim 
-        sdim
-        % Control input dimension
-        udim
-        % Number of clf in use
-        n_clf
-        % Number of cbf in use
-        n_cbf
+        xdim % State dimension
+        sdim %
+        udim % Control input dimension
+        n_clf % Number of clf in use
+        n_cbf % Number of cbf in use
         
-        % weights used in the built-in controllers
-        weight_input
-        weight_slack
+        %% weights used in the built-in controllers
+
+        weight_input % weight on control input
+        weight_slack % weight on slack variable
         
         % Model parameters as a structure object, specific to the system.
         % This might contain other parameters used for setting up the dynsys,
-        % for instance, clf_rate and cbf_rate. However, referring to this 
+        % for instance, ``clf_rate`` and ``cbf_rate``. However, referring to this 
         % variable's fields directly instead of the equivalent class variables
         % (when they exist) is not recommended.
         % (Always preferred to refer directly to the class properties.)
@@ -39,36 +35,43 @@ classdef CtrlAffineSys < handle
                
         %% Functions generated from symbolic expressions.
         % (Used when setup_option is 'symbolic'.)
-        f_sym
-        g_sym
-        cbf_sym
-        lf_cbf_sym
-        lg_cbf_sym
-        clf_sym
-        lf_clf_sym
-        lg_clf_sym
+
+        f_sym % :math:`f` function generated from symbolic expression
+        g_sym % :math:`g` function generated from symbolic expression
+        cbf_sym % CBF function generated from symbolic expression
+        lf_cbf_sym % :math:`L_f B(x)` function generated from symbolic expression
+        lg_cbf_sym % :math:`L_g B(x)` function generated from symbolic expression
+        clf_sym % CLF function generated from symbolic expression
+        lf_clf_sym % :math:`L_f V(x)` function generated from symbolic expression
+        lg_clf_sym % :math:`L_g V(x)` function generated from symbolic expression
     end
     
     methods
         function obj = CtrlAffineSys(params, setup_option)
-        %% dynsys = CtrlAffineSys(params)
-        %% default:
-        %%      dynsys = CtrlAffineSys(params, 'symbolic')
-        %% if user-defined dynamics, cbf, clf are used:
-        %%      dynsys = CtrlAffineSys(params, 'built-in')
-        % params: dictionary of necessary parameters to define the dynsys
-        %   you can pass the model parameters you want to use to define
-        %   the dynamics, together with the below fields that is necessary
-        %   to support the functionality of the library.
-        % Necessary fields:
-        %   clf_rate / clf.rate: rate for the clf constraint.
-        %   cbf_rate / cbf.rate: rate for the cbf constraint.
-        % for the 'built-in' option:
-        %   xdim: state dimension
-        %   udim: control input dimension
-        % Optional fields:
-        %   u_min: control min bound (scalar, or the vector of size u_min)
-        %   u_max: control max bound        
+        % | Define a dynamical system through the ``CtrlAffineSys`` constructor
+        % | ``dynsys = CtrlAffineSys(params)``
+        % 
+        % Examples:
+        %  default usage:
+        %    ``dynsys = CtrlAffineSys(params, 'symbolic')``
+        %  if user-defined dynamics, cbf, clf are used:
+        %    ``dynsys = CtrlAffineSys(params, 'built-in')``
+        %
+        % Args:
+        %  params: dictionary of necessary parameters to define the dynsys
+        %    you can pass the model parameters you want to use to define
+        %    the dynamics, together with the below fields that is necessary
+        %    to support the functionality of the library.
+        %
+        %    Necessary fields:
+        %      | ``clf_rate`` / ``clf.rate``: rate for the clf constraint.
+        %      | ``cbf_rate`` / ``cbf.rate``: rate for the cbf constraint.
+        %    For the 'built-in' option:
+        %      | ``xdim``: state dimension
+        %      | ``udim``: control input dimension
+        %      | ``u_min``: control min bound (scalar, or the vector of size u_min)
+        %      | ``u_max``: control max bound        
+        %  setup_option: ``'symbolic'`` or ``'builtin'``
             if nargin < 1
                 error("Warning: params argument is missing.")
             end
@@ -85,19 +88,29 @@ classdef CtrlAffineSys < handle
         end
         
         function [x, f, g] = defineSystem(obj, params)
-        % [x, f, g] = defineSystem(obj, params)
-        % For 'symbolic' setup, use this to define your dynamics, 
-        % Outputs: x: symbolic state vector
-        %          f: drift term, expressed symbolically wrt x.
-        %          g: control vector fields, expressed symbolically wrt x.
+        % | For 'symbolic' setup, use this to define your dynamics
+        % | ``[x, f, g] = defineSystem(obj, params)``
+        %
+        % Returns:
+        %   [x, f, g]: 
+        %
+        %     x: symbolic state vector.
+        %
+        %     f: drift term, expressed symbolically wrt x.
+        %
+        %     g: control vector fields, expressed symbolically wrt x.
+        %
             x = []; f = []; g = [];         
         end
         
         function clf = defineClf(obj, params, symbolic_state)
-        % clf = defineClf(obj, params, symbolic_state)
         % For 'symbolic' setup, use this to define the CLF.
-        % symbolic state: same symbolic state created in defineSystem
-        % clf: CLF expressed symbolically wrt symbolic_state.
+        % ``clf = defineClf(obj, params, symbolic_state)``
+        %
+        % Args:
+        %   symbolic_state: same symbolic state created in defineSystem
+        %
+        % CLF expressed symbolically wrt symbolic_state.
             clf = [];
         end
         

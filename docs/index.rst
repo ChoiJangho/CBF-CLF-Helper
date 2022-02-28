@@ -3,10 +3,6 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
 
 Welcome to CBF-CLF-Helper's documentation!
 ==========================================
@@ -37,12 +33,13 @@ Demos
 -----
 Run files in the directory ``demos`` in MATLAB.
 
-testing
--------
-.. mat:automodule:: lib.@CtrlAffineSys
-.. mat:autoclass:: CtrlAffineSys
-.. mat:autoattribute:: CtrlAffineSys.u_max
-
 .. Links
 .. _Symbolic Math Toolbox: https://www.mathworks.com/products/symbolic.html
 .. _Manual: https://github.com/HybridRobotics/CBF-CLF-Helper/blob/master/Manual_v1.pdf
+
+.. toctree::
+   :maxdepth: 3
+   :caption: Contents:
+
+   api/classes
+   api/functions/sim
