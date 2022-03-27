@@ -283,6 +283,66 @@ classdef CtrlAffineSys < handle
             LgBs = obj.lg_cbf(x);
             Bdots = LfBs + reshape(pagemtimes(LgBs, u), obj.n_cbf, []);            
         end
+        
+        function train_data = reconstruct_train_data(obj, xs, us, varargin)
+            % This reconstruction method adapts following philosophy
+            % dV = V(t+1) - V(t) / dt
+            % dV_hat = (LfV(x_t) + LfV(x_{t+1}))/2 + (LgV(x_t) +
+            %           LgV(x_{t+1})/2 * u
+            % dV_error = dV - dV_hat
+            % There might be an alternative to evaluate
+            % LfV((x_t+x_{t+1})/2) rather than the above method.
+            settings = parse_function_args(varargin{:});
+            
+            % Sanity check
+            [x_dim, num_data] = size(xs);
+            [u_dim, num_data_u] = size(us);
+            if x_dim ~= obj.xdim || u_dim ~= obj.udim
+                error("Your data format is wrong. Make sure that your input abides by right format");
+            end
+            if isfield(settings, 'ts')
+                ts = settings.ts;
+            elseif isfield(settings, 'dt')
+                ts = 0:settings.dt:(num_data-1)*settings.dt;
+            else
+                error("You must provide time information to reconstruct training data");
+            end
+            
+            reconstruct_clf = isfield(settings, 'Vs');
+            reconstruct_cbf = isfield(settings, 'Bs');
+            
+            if reconstruct_clf
+                Vs = settings.Vs;
+                dV_hats = zeros(1, num_data - 1);
+                for i = 1:num_data-1
+                    x = xs(:, i); u = us(:, i);
+                    x_next = xs(:, i+1);
+                    dV_hat = obj.lf_clf(x) + obj.lg_clf(x) * u;
+                    dV_hat_next = obj.lf_clf(x_next) + obj.lg_clf(x_next) * u;
+                    dV_hats(i) = (dV_hat + dV_hat_next)/2;
+                end
+                dVs = (Vs(2:end) - Vs(1:end-1))./(ts(2:end) - ts(1:end-1));
+                dVs_error = dVs - dV_hats;   
+                
+                train_data.dVs_error = dVs_error;
+            end
+            
+            if reconstruct_cbf
+                Bs = settings.Bs;
+                dB_hats = zeros(1, num_data-1);
+                for i = 1:num_data-1
+                    x = xs(:, i); u = us(:, i);
+                    x_next = xs(:, i+1);
+                    dB_hat = obj.lf_cbf(x) + obj.lg_cbf(x) * u;
+                    dB_hat_next = obj.lf_cbf(x_next) + obj.lg_cbf(x_next) * u;
+                    dB_hats(i) = (dB_hat + dB_hat_next)/2;
+                end
+                dBs = (Bs(2:end) - Bs(1:end-1))./(ts(2:end) - ts(1:end-1));
+                dBs_error = dBs - dB_hats;   
+                
+                train_data.dBs_error = dBs_error;
+            end
+        end
     end
 end
 
