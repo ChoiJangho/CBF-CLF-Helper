@@ -23,14 +23,21 @@ if n ~= 1 & m ~= 1
   out.pFem12 = out.pH2 + MZ3/M3.*cos(x(:,1));
   out.pFem21 = out.pH1 + -MZ3/M3.*sin(x(:,2));
   out.pFem22 = out.pH2 + MZ3/M3.*cos(x(:,2));
+% Position of stance knee.
   out.pG11 = out.pH1 + -L3.*sin(x(:,1));
   out.pG12 = out.pH2 + L3.*cos(x(:,1));
   out.pG21 = out.pH1 + -L3.*sin(x(:,2));
   out.pG22 = out.pH2 + L3.*cos(x(:,2));
-  out.pTib11 = out.pH1 + -MZ4/M4.*sin(x(:,3))-L3.*sin(x(:,1));
-  out.pTib12 = out.pH2 + MZ4/M4.*cos(x(:,3))+L3.*cos(x(:,1));
+% Position of lower leg mass.
+  out.pTib11 = out.pH1 -L3.*sin(x(:,1));
+  out.pTib12 = out.pH2 +L3.*cos(x(:,1));
+%   out.pTib11 = out.pH1 + -MZ4/M4.*sin(x(:,3))-L3.*sin(x(:,1));
+%   out.pTib12 = out.pH2 + MZ4/M4.*cos(x(:,3))+L3.*cos(x(:,1));
+%   out.pTib21 = out.pH1 + -L3.*sin(x(:,2));
+%   out.pTib22 = out.pH2 + L3.*cos(x(:,2));
   out.pTib21 = out.pH1 + -L3.*sin(x(:,2))-MZ4/M4.*sin(x(:,4));
   out.pTib22 = out.pH2 + L3.*cos(x(:,2))+MZ4/M4.*cos(x(:,4));
+% Position of stance foot
   out.pFoot11 = out.pH1 + -L3.*sin(x(:,1))-L4.*sin(x(:,3));
   out.pFoot12 = out.pH2 + L3.*cos(x(:,1))+L4.*cos(x(:,3));
   out.pFoot21 = out.pH1 + -L3.*sin(x(:,2))-L4.*sin(x(:,4));
@@ -38,22 +45,28 @@ if n ~= 1 & m ~= 1
 else
   out.pH1 = pH_horiz;
   out.pH2 = -L3*cos(x(1))-L4*cos(x(3));
-  out.pT1 = out.pH1 + 1/M1*(-sin(x(5))*MZ1+cos(x(5))*MY1);
-  out.pT2 = out.pH2 + 1/M1*(cos(x(5))*MZ1+sin(x(5))*MY1);
+  out.pT1 = out.pH1 + 1/M1*(-sin(x(5))*MZ1);
+  out.pT2 = out.pH2 + 1/M1*(cos(x(5))*MZ1);
   out.pHead1 = out.pH1 + -L1*sin(x(5));
   out.pHead2 = out.pH2 + L1*cos(x(5));
   out.pFem11 = out.pH1 + -MZ3/M3*sin(x(1));
   out.pFem12 = out.pH2 + MZ3/M3*cos(x(1));
-  out.pFem21 = out.pH1 + -MZ3/M3*sin(x(2));
-  out.pFem22 = out.pH2 + MZ3/M3*cos(x(2));
+%   out.pFem21 = out.pH1 + -MZ3/M3*sin(x(2));
+%   out.pFem22 = out.pH2 + MZ3/M3*cos(x(2));
+  out.pFem21 = out.pH1;
+  out.pFem22 = out.pH2;
   out.pG11 = out.pH1 + -L3*sin(x(1));
   out.pG12 = out.pH2 + L3*cos(x(1));
   out.pG21 = out.pH1 + -L3*sin(x(2));
   out.pG22 = out.pH2 + L3*cos(x(2));
-  out.pTib11 = out.pH1 + -MZ4/M4*sin(x(3))-L3*sin(x(1));
-  out.pTib12 = out.pH2 + MZ4/M4*cos(x(3))+L3*cos(x(1));
-  out.pTib21 = out.pH1 + -L3*sin(x(2))-MZ4/M4*sin(x(4));
-  out.pTib22 = out.pH2 + L3*cos(x(2))+MZ4/M4*cos(x(4));
+%   out.pTib11 = out.pH1 + -MZ4/M4*sin(x(3))-L3*sin(x(1));
+%   out.pTib12 = out.pH2 + MZ4/M4*cos(x(3))+L3*cos(x(1));
+    out.pTib11 = out.pH1 -L3.*sin(x(:,1));
+  out.pTib12 = out.pH2 +L3.*cos(x(:,1));
+%   out.pTib21 = out.pH1 + -L3*sin(x(2))-MZ4/M4*sin(x(4));
+%   out.pTib22 = out.pH2 + L3*cos(x(2))+MZ4/M4*cos(x(4));
+  out.pTib21 = out.pH1 + -L3*sin(x(2));
+  out.pTib22 = out.pH2 + L3*cos(x(2));
   out.pFoot11 = out.pH1 + -L3*sin(x(1))-L4*sin(x(3));
   out.pFoot12 = out.pH2 + L3*cos(x(1))+L4*cos(x(3));
   out.pFoot21 = out.pH1 + -L3*sin(x(2))-L4*sin(x(4));

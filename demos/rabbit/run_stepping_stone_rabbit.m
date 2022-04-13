@@ -68,9 +68,9 @@ params.cbf.rate = 50;
 params.gamma_b = 100;
 %% Settings for the Stepping stones
 step_width = 0.05;
-steps_min = [0.33, 0.37, 0.33];
+steps_min = [0.35, 0.35];
 steps_max = steps_min + step_width;
-dt = 0.002;
+dt = 0.025;
 nstep = length(steps_min);
 with_slack = true;
 verbose_level = 1;
@@ -154,6 +154,6 @@ global animation_scale
 animation_scale = plant_sys.params.scale;
 global SimConfig
 SimConfig.m_load=0;
-% animation_dt = 0.05;
-% xs_vis = coordinateTransformation(xs');
-% anim_moving_stone_load(ts', xs_vis, animation_dt, l_min_t_anim, l_max_t_anim);
+animation_dt = 0.05;
+xs_vis = coordinateTransformation(xs');
+anim_moving_stone_load(ts', xs_vis, animation_dt, l_min_t_anim, l_max_t_anim);

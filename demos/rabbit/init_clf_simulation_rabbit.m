@@ -15,7 +15,6 @@ params.a_bez = [2.42225522164138,2.50944978892455,2.66152682946601,2.78780950883
 params.xdim = 14;
 params.udim = 4;
 params.rel_deg_y = 2;
-params.use_phase = false;
     
 % scale changes the mass and inertial values of the robot.
 % Note that the reference gait is designed for the scale of 1.

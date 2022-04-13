@@ -43,3 +43,4 @@ Run files in the directory ``demos`` in MATLAB.
 
    api/classes
    api/functions/sim
+   api/demos

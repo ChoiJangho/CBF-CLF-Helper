@@ -64,7 +64,7 @@ close all; clear all;
 init_clf_simulation_rabbit;
 dt = 0.025;
 % dt = 0.002;
-nstep = 10;
+nstep = 5;
 with_slack = true;
 verbose_level = 1;
 
@@ -73,7 +73,7 @@ control_sys = RabbitBuiltIn(params);
 plant_sys = RabbitBuiltIn(params);
 
 % Reflect model uncertainty here
-plant_sys.params.scale = 1.7;
+plant_sys.params.scale = 1.0;
 %plant_sys.params.torso_add = 10;
 
 clf_qp_controller = @(x, varargin) control_sys...
@@ -103,8 +103,8 @@ plot_rabbit_result(xs, ts, us, extras);
 
 %% Step 6. Five Link Animation
 % This is only designed for enabling animation of bipedal walker
-% global animation_scale 
-% animation_scale = plant_sys.params.scale;
-% animation_dt = 0.05;
-% x_quan_vec = coordinateTransformation(xs);
-% anim_flat_ground(ts, x_quan_vec, animation_dt)
+global animation_scale 
+animation_scale = plant_sys.params.scale;
+animation_dt = 0.05;
+x_quan_vec = coordinateTransformation(xs);
+anim_flat_ground(ts, x_quan_vec, animation_dt, true)

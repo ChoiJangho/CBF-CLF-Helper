@@ -28,7 +28,7 @@ classdef RabbitBuiltIn < CtrlAffineSysFL
     methods
         function obj = RabbitBuiltIn(params)
             % Always using built-in option for setup.
-            obj = obj@CtrlAffineSysFL(params, 'built-in');
+            obj = obj@CtrlAffineSysFL(params, 'built-in', 'phase');
             obj.theta_init = obj.params.theta_init;
             obj.theta_end = obj.params.theta_end;
             obj.a_bez = obj.params.a_bez;

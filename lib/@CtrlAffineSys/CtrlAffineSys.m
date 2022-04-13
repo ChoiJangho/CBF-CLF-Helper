@@ -15,7 +15,6 @@ classdef CtrlAffineSys < handle
         u_min % min bound of control input.
                 
         xdim % State dimension
-        sdim %
         udim % Control input dimension
         n_clf % Number of clf in use
         n_cbf % Number of cbf in use

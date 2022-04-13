@@ -267,13 +267,15 @@ while ~end_simulation
     
     us = [us, u];
     extraout = fetch_other_extras(extraout, extra_t);
-    feas = [feas, extra_t.feas];
+    if isfield(extra_t, 'feas')
+        feas = [feas, extra_t.feas];
+    end
     if ~isfield(extra_t, 'comp_time')
         comp_times = [comp_times, 0];
     else
         comp_times = [comp_times, extra_t.comp_time];        
     end
-    if with_slack
+    if with_slack && isfield(extra_t, 'slack')        
         slacks = [slacks, extra_t.slack];
     end
     if isfield(extra_t, 'Vs')
@@ -348,9 +350,15 @@ end
 
 us = [us, u];
 extraout = fetch_other_extras(extraout, extra_t);
-feas = [feas, extra_t.feas];
-comp_times = [comp_times, extra_t.comp_time];
-if with_slack
+if isfield(extra_t, 'feas')
+    feas = [feas, extra_t.feas];
+end
+if ~isfield(extra_t, 'comp_time')
+    comp_times = [comp_times, 0];
+else
+    comp_times = [comp_times, extra_t.comp_time];        
+end
+if with_slack && isfield(extra_t, 'slack')
     slacks = [slacks, extra_t.slack];
 end
 if isfield(extra_t, 'Vs')
@@ -398,7 +406,11 @@ end % end of the main function.
 
 function extras = fetch_other_extras(extras, extra_t)
     if length(fieldnames(extras)) == 0
-        extras_field_name = fieldnames(extra_t);
+        if ~isempty(extra_t)
+            extras_field_name = fieldnames(extra_t);
+        else
+            extras_field_name = [];
+        end
     else
         extras_field_name = fieldnames(extras);
     end

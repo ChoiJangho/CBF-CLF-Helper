@@ -1,6 +1,8 @@
 classdef CtrlAffineSysFL < CtrlAffineSys
     %% Control-Affine Dynamic System with Feeback Linearization utilities
     properties
+        output_option % output option
+        
         % Autonomous matrix of the Linearized output dynamics
         F_FL
         F_FL_eps % auxilary
@@ -13,6 +15,17 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         % Output as a function handle (assuming relative degree 2)
         y_sym
         phase_sym
+        
+        %% These are used for output_option: siso
+        lfs_y_sym % Cell structure that contains high order derivatives of the output.
+        lglfr_y_sym % LfLg^(rel_deg_y-1)y
+        xi_sym % output coordinates in the normal form        
+        z_sym % zero dynamics coordinates in the normal form
+        % TODO:
+        internal_dynamics_sym % Currently not supported.
+        K_siso
+        
+        %% These are used for output_option: phase
         % 1st order Lie derivative of the output
         lf_y_sym
         lg_y_sym
@@ -30,23 +43,25 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         lg_y_min_exceed_sym
         lglf_y_min_exceed_sym
         l2f_y_min_exceed_sym        
-        
-        % binary indicator on whether it uses phase-based output or not.
-        use_phase        
-        
+                
         % rate of the RES-CLF.
         eps_FL
         % CLF under feedback linearization and its derivatives as function handles.
-        Gram_clf_FL % Gram matrix of the CLF for feedback linearization.
-        
+        Gram_clf_FL % Gram matrix of the CLF for feedback linearization.        
     end
     
     methods
-        function obj = CtrlAffineSysFL(params, setup_option)
+        function obj = CtrlAffineSysFL(params, setup_option, output_option)
+        % Args:
+        %  params: dictionary of necessary parameters to define the dynsys
+        %    you can pass the model parameters you want to use to define
+        %    the dynamics, together with the below fields that is necessary
+        %    to support the functionality of the library.
+        %  setup_option: ``'symbolic'``(default) or ``'builtin'``
+        %  output_option: ``'siso'``(default) or ``'mimo'`` or ``'phase'``
             if nargin < 1
                 error("Warning: params argument is missing.")
             end
-            disp(setup_option)
             if nargin < 2
                 setup_option = 'symbolic';
             end
@@ -56,11 +71,16 @@ classdef CtrlAffineSysFL < CtrlAffineSys
                 setup_option = 'built-in';
             end
             
+            if nargin < 3
+                output_option = 'phase';
+            end
+           
             obj@CtrlAffineSys(params, setup_option);
+            obj.output_option = output_option;
             obj.init_sys_FL(params);
         end
         
-        function [y, phase, y_max_exceed, y_min_exceed] = defineOutput(obj, params, symbolic_state)
+        function [y, phase, y_max_exceed, y_min_exceed] = defineOutputWithPhase(obj, params, symbolic_state)
             y = [];
             phase = [];
             y_max_exceed = [];
@@ -86,31 +106,29 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         
         function [y, dy, L2fy, LgLfy, phase] = eval_y(obj, s)
             % Todo: interpret this and make it more robust!
-            if ~obj.use_phase
                 y = obj.y(s);
                 dy = obj.lf_y(s);
                 L2fy = obj.l2f_y(s);
                 LgLfy = obj.lglf_y(s);
                 phase = [];
-                return
-            end
-            phase = obj.phase(s);
-            if phase > obj.params.phase_max
-                y = obj.y_max_exceed(s);
-                dy = obj.lf_y_max_exceed(s);
-                L2fy = obj.l2f_y_max_exceed(s);
-                LgLfy = obj.lglf_y_max_exceed(s);
-            elseif phase < obj.params.phase_min
-                y = obj.y_min_exceed(s);
-                dy = obj.lf_y_min_exceed(s);
-                L2fy = obj.l2f_y_min_exceed(s);
-                LgLfy = obj.lglf_y_min_exceed(s);
-            else
-                y = obj.y(s);
-                dy = obj.lf_y(s);
-                L2fy = obj.l2f_y(s);
-                LgLfy = obj.lglf_y(s);
-            end
+
+%             phase = obj.phase(s);
+%             if phase > obj.params.phase_max
+%                 y = obj.y_max_exceed(s);
+%                 dy = obj.lf_y_max_exceed(s);
+%                 L2fy = obj.l2f_y_max_exceed(s);
+%                 LgLfy = obj.lglf_y_max_exceed(s);
+%             elseif phase < obj.params.phase_min
+%                 y = obj.y_min_exceed(s);
+%                 dy = obj.lf_y_min_exceed(s);
+%                 L2fy = obj.l2f_y_min_exceed(s);
+%                 LgLfy = obj.lglf_y_min_exceed(s);
+%             else
+%                 y = obj.y(s);
+%                 dy = obj.lf_y(s);
+%                 L2fy = obj.l2f_y(s);
+%                 LgLfy = obj.lglf_y(s);
+%             end
         end
         
         %% Sym2Value Function

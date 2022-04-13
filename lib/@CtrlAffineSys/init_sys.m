@@ -20,12 +20,12 @@ function init_sys(obj, params)
         if ~isa(g_, 'sym')
             g_ = sym(g_);
         end
-        clf_ = obj.defineClf(params, x);
-        cbf_ = obj.defineCbf(params, x);
         % Setting state and input dimension.
         obj.xdim = size(x, 1);
-        obj.sdim = obj.xdim; % support past version, expedient
         obj.udim = size(g_, 2);
+        
+        clf_ = obj.defineClf(params, x);
+        cbf_ = obj.defineCbf(params, x);
         obj.f_sym = matlabFunction(f_, 'vars', {x});
         obj.g_sym = matlabFunction(g_, 'vars', {x});
         
@@ -97,7 +97,6 @@ function init_sys(obj, params)
             error("xdim should be specified for built-in setup.");
         end
         obj.xdim = params.xdim;
-        obj.sdim = obj.xdim; % support past version, expedient
         if ~isfield(params, 'udim')
             error("udim should be specified for built-in setup.");
         end
@@ -231,9 +230,9 @@ function init_sys(obj, params)
                 "additional argument 'weight_slack'");
         end
     end
-    if isempty(obj.weight_slack)
-        error("Either params.weight.slack or params.weight_slack should be provided.");
-    end
+%     if isempty(obj.weight_slack)
+%         error("Either params.weight.slack or params.weight_slack should be provided.");
+%     end
     
     %% Do sanity check if all necessary functions are set up properly.
     x_test = zeros(obj.xdim, 1);
