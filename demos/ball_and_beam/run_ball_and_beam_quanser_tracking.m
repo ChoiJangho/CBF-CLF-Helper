@@ -5,6 +5,8 @@ close all
 plot_animation = false;
 % save animation to video if true.
 save_video = true;
+period = 10;
+amplitude = 0.1;
 
 dt = 0.001;
 eps = 1.0;
@@ -19,7 +21,7 @@ dynsys = BallBeamQuanser(feedback_gain);
 
 
 virtual_input_controller = @(t, x, varargin) dynsys.ctrlSisoTracking( ...
-    t, x, @get_reference_trajectory, varargin{:});
+    t, x, @(t) get_reference_trajectory(t, amplitude, period, 'sine'), varargin{:});
 
 fl_controller = @(t, x, varargin) dynsys.ctrlFeedbackLinearize( ...
     t, x, virtual_input_controller, varargin{:});
