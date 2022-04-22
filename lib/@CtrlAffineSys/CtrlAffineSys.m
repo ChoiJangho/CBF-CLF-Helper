@@ -5,7 +5,8 @@ classdef CtrlAffineSys < handle
 
     properties
         setup_option % Set-up option: 'symbolic', 'built-in'
-                
+        is_sys_initialized = false
+        
         %% necessary parameters
 
         clf_rate % rate used in the clf constraint.

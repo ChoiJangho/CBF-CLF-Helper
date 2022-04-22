@@ -3,6 +3,9 @@ function init_sys(obj, params)
 % Built in
     % implant the params' parameter to object's parameters
     % ex) x_dim, u_dim, n_clf, n_cbf, clf_rate, cbf_rate ...
+    if obj.is_sys_initialized
+        return
+    end
     obj.params = params;
         
     if strcmp(obj.setup_option, 'symbolic')
@@ -277,4 +280,5 @@ function init_sys(obj, params)
     end    
     
     fprintf(obj.get_dynsys_summary())
+    obj.is_sys_initialized = true;
 end
