@@ -20,12 +20,14 @@ function init_sys(obj, params)
         if ~isa(g_, 'sym')
             g_ = sym(g_);
         end
-        clf_ = obj.defineClf(params, x);
-        cbf_ = obj.defineCbf(params, x);
         % Setting state and input dimension.
         obj.xdim = size(x, 1);
         obj.sdim = obj.xdim; % support past version, expedient
         obj.udim = size(g_, 2);
+        
+        clf_ = obj.defineClf(params, x);
+        cbf_ = obj.defineCbf(params, x);
+        
         obj.f_sym = matlabFunction(f_, 'vars', {x});
         obj.g_sym = matlabFunction(g_, 'vars', {x});
         
