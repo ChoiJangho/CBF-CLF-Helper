@@ -108,6 +108,9 @@ classdef QuanserCartPole < CtrlAffineSys
             elseif strcmp ( IP02_LOAD_TYPE, 'WEIGHT')
                 M = Mc2 + Mw;
                 Beq = 5.4;
+            elseif strcmp ( IP02_LOAD_TYPE, '2WEIGHTS')
+                M = Mc2 + 2*Mw;
+                Beq = 6.5;
             else 
                 error( 'Error: Set the IP02 load configuration.' )
             end
