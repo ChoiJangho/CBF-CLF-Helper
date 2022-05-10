@@ -47,7 +47,7 @@ classdef CtrlAffineSys < handle
     end
     
     methods
-        function obj = CtrlAffineSys(params, setup_option)
+        function obj = CtrlAffineSys(params, setup_option, clone_to_built_in)
         % | Define a dynamical system through the ``CtrlAffineSys`` constructor
         % | ``dynsys = CtrlAffineSys(params)``
         % 
@@ -56,6 +56,8 @@ classdef CtrlAffineSys < handle
         %    ``dynsys = CtrlAffineSys(params, 'symbolic')``
         %  if user-defined dynamics, cbf, clf are used:
         %    ``dynsys = CtrlAffineSys(params, 'built-in')``
+        %  if you want to create built-in class from the symbolic option:
+        %    ``dynsys = CtrlAffineSys(params, 'symbolic-built-in')``
         %
         % Args:
         %  params: dictionary of necessary parameters to define the dynsys
@@ -78,6 +80,16 @@ classdef CtrlAffineSys < handle
             if nargin < 2
                 setup_option = 'symbolic';
             end
+            if nargin < 3
+                clone_to_built_in = false;
+            end
+            if strcmp(setup_option, 'built-in') && clone_to_built_in
+                error("clone_to_built_in is used is only for 'symbolic' or 'symbolic_set_up'.");
+            end
+            if clone_to_built_in
+                setup_option = 'symbolic-built-in';
+            end
+            
             if strcmp(setup_option, 'built_in')
                 setup_option = 'built-in';
             elseif strcmp(setup_option, 'builtin')

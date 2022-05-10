@@ -1,7 +1,6 @@
 classdef BallBeamSastry < CtrlAffineSys
     properties
         G = 9.81;
-%         G = 9.81;
     end
     
     methods

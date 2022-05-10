@@ -8,11 +8,25 @@ function init_sys(obj, params)
     end
     obj.params = params;
         
-    if strcmp(obj.setup_option, 'symbolic')
+    if strcmp(obj.setup_option, 'symbolic') || strcmp(obj.setup_option, 'symbolic-built-in')
         disp(['Setting up the dynamics, CLFs, CBFs from defined symbolic expressions.', ...
             '(This might take time.)']);
+        generate_clone = false;
+        if strcmp(obj.setup_option, 'symbolic-built-in')
+            generate_clone = true;
+            original_class_name = class(obj);
+            clone_class_name = strcat(original_class_name, 'Clone');
+            clone_class_path = fileparts(fileparts(which(class(obj))));
+            status = mkdir(clone_class_path, strcat('@', clone_class_name));
+            clone_class_path = fullfile(clone_class_path, strcat('@', clone_class_name));
+            %% TODO (Unfinished)
+            disp(['Built-in class clone will be created at', clone_class_path]);
+            syms obj_
+        end
+        
         % get symbolic expressions for x, f, g, clf, cbf.
         [x, f_, g_] = obj.defineSystem(params);
+        assume(x, 'real');
         if isempty(x) || isempty(f_) || isempty(g_)
             error("x, f, g is empty. Create a class function defineSystem %s", ...
             "and define your dynamics with symbolic expression.");
@@ -32,6 +46,12 @@ function init_sys(obj, params)
         
         obj.f_sym = matlabFunction(f_, 'vars', {x});
         obj.g_sym = matlabFunction(g_, 'vars', {x});
+        if generate_clone
+            f_file_str = fullfile(clone_class_path, 'f');
+            matlabFunction(f_, 'file', f_file_str, 'vars', {obj_, x});
+            g_file_str = fullfile(clone_class_path, 'g');
+            matlabFunction(g_, 'file', g_file_str, 'vars', {obj_, x});
+        end        
         
         if ~isempty(clf_)
             if ~iscell(clf_)
@@ -45,21 +65,43 @@ function init_sys(obj, params)
             clf_sym = cell(obj.n_clf, 1);
             lf_clf_sym = cell(obj.n_clf, 1);
             lg_clf_sym = cell(obj.n_clf, 1);
+            syms('clf_sym_array', [obj.n_clf, 1]);
+            syms('lf_clf_', [obj.n_clf, 1]);
+            syms('lg_clf_', [obj.n_clf, 1]);
+            
+            
             for i_clf = 1:obj.n_clf
+                clf_sym{i_clf} = matlabFunction(clf_{i_clf}, 'vars', {x});
                 dclf_i = simplify(jacobian(clf_{i_clf}, x));
                 lf_clf_i = dclf_i * f_;
                 lg_clf_i = dclf_i * g_;
-                clf_sym{i_clf} = matlabFunction(clf_{i_clf}, 'vars', {x});
+                
                 lf_clf_sym{i_clf} = matlabFunction(lf_clf_i, 'vars', {x});
                 if all(isAlways(simplify(lg_clf_i) == 0, 'Unknown', 'false'))
                     error('Relative degree of the defined %d-th CLF > 1. %s', ...
                     [i_clf, 'Currently, High-order relative degree is not supported.']);
                 end
                 lg_clf_sym{i_clf} = matlabFunction(lg_clf_i, 'vars', {x});
+                
+                if generate_clone
+                    clf_sym_array(i_clf) = clf_{i_clf};
+                    lf_clf_(i_clf) = lf_clf_i;
+                    lg_clf_(i_clf) = lg_clf_i;
+                end
+            
             end
             obj.clf_sym = clf_sym;             
             obj.lf_clf_sym = lf_clf_sym;
             obj.lg_clf_sym = lg_clf_sym;
+            if generate_clone
+                clf_file_str = fullfile(clone_class_path, 'clf');
+                matlabFunction(clf_sym_array, 'file', clf_file_str, 'vars', {obj_, x});
+                lf_clf_file_str = fullfile(clone_class_path, 'lf_clf');
+                matlabFunction(lf_clf_, 'file', lf_clf_file_str, 'vars', {obj_, x});
+                %% TODO: make sure that this works when udim > 1.
+                lg_clf_file_str = fullfile(clone_class_path, 'lg_clf');
+                matlabFunction(lg_clf_, 'file', lg_clf_file_str, 'vars', {obj_, x});
+            end
         else
             obj.n_clf = 0;
         end
@@ -75,21 +117,41 @@ function init_sys(obj, params)
             cbf_sym = cell(obj.n_cbf, 1);
             lf_cbf_sym = cell(obj.n_cbf, 1);
             lg_cbf_sym = cell(obj.n_cbf, 1);
+            syms('cbf_sym_array', [obj.n_cbf, 1]);
+            syms('lf_cbf_', [obj.n_cbf, 1]);
+            syms('lg_cbf_', [obj.n_cbf, 1]);
+            
             for i_cbf = 1:obj.n_cbf
+                cbf_sym{i_cbf} = matlabFunction(cbf_{i_cbf}, 'vars', {x});
+
                 dcbf_i = simplify(jacobian(cbf_{i_cbf}, x));
                 lf_cbf_i = dcbf_i * f_;
                 lg_cbf_i = dcbf_i * g_;        
-                cbf_sym{i_cbf} = matlabFunction(cbf_{i_cbf}, 'vars', {x});
                 lf_cbf_sym{i_cbf} = matlabFunction(lf_cbf_i, 'vars', {x});
                 if all(isAlways(simplify(lg_cbf_i) == 0, 'Unknown', 'false'))
                     error('Relative degree of the defined %d-th CBF > 1. %s', ...
                     [i_cbf, 'Currently, High-order relative degree is not supported.']);
                 end
-                lg_cbf_sym{i_cbf} = matlabFunction(lg_cbf_i, 'vars', {x});                
+                lg_cbf_sym{i_cbf} = matlabFunction(lg_cbf_i, 'vars', {x});
+                
+                if generate_clone
+                    cbf_sym_array(i_cbf) = cbf_{i_cbf};
+                    lf_cbf_(i_cbf) = lf_cbf_i;
+                    lg_cbf_(i_cbf) = lg_cbf_i;
+                end
             end
             obj.cbf_sym = cbf_sym;             
             obj.lf_cbf_sym = lf_cbf_sym;
             obj.lg_cbf_sym = lg_cbf_sym;
+            if generate_clone
+                cbf_file_str = fullfile(clone_class_path, 'cbf');
+                matlabFunction(cbf_sym_array, 'file', cbf_file_str, 'vars', {obj_, x});
+                lf_cbf_file_str = fullfile(clone_class_path, 'lf_cbf');
+                matlabFunction(lf_cbf_, 'file', lf_cbf_file_str, 'vars', {obj_, x});
+                %% TODO: make sure that this works when udim > 1.
+                lg_cbf_file_str = fullfile(clone_class_path, 'lg_cbf');
+                matlabFunction(lg_cbf_, 'file', lg_cbf_file_str, 'vars', {obj_, x});                
+            end
         else
             obj.n_cbf = 0;
         end

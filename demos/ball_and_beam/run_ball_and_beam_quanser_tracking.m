@@ -93,7 +93,7 @@ hold on;
 plot(ts, xi_ds(4, :), 'r:', 'LineWidth', 1.5);
 ylabel('$\ddot{y}$');
 xlabel('$t$ [sec]');
-grid on; 
+grid on;
 
 
 if plot_animation

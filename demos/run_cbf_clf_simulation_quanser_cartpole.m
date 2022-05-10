@@ -16,10 +16,11 @@ params.k_cbf = 10;
 params.clf.rate = 1;
 params.cbf.rate = 10;
 
-cartPole = QuanserCartPole(params);
+% cartPole = QuanserCartPole(params, 'symbolic', true);
+cartPole = QuanserCartPoleClone(params);
 
-controller = @(x, varargin) cartPole.ctrlCbfClfQp(x, ...
-    'weight_slack', params.weight_slack, varargin{:});
+
+controller = @cartPole.ctrlCbfClfQp;
 
 [xs, us, ts, extraout] = rollout_controller( ...
     x0, cartPole, cartPole, controller, sim_t, 'dt', dt);

@@ -116,8 +116,7 @@ classdef QuanserCartPole < CtrlAffineSys
             end
         end
         
-        function clf = defineClf(obj, params, x_sym)
-            x = x_sym;
+        function clf = defineClf(obj, params, x)
             [~, f_, g_] = obj.defineSystem(params);
             A_sym = jacobian(f_, x);
             A = double(subs(A_sym, x, zeros(4, 1)));
@@ -128,7 +127,6 @@ classdef QuanserCartPole < CtrlAffineSys
             R = obj.udim;
             P = icare(A, B, Q, R);
             clf = x' * P * x;
-%             disp(P)
         end
         
         function cbf = defineCbf(obj, params, x_sym)
