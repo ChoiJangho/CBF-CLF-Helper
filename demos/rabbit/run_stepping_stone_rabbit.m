@@ -61,7 +61,7 @@ close all; clear all;
 %   0: use slack variable while solving QP
 %   1: not use slack variable while solving QP
 
-init_clf_simulation_rabbit;
+params = init_clf_simulation_rabbit;
 %% Control Barrier Function Parameters
 params.cbf.rate = 50;
 % Used in the cbf.

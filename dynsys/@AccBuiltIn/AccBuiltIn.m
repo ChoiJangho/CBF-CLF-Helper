@@ -40,7 +40,8 @@ classdef AccBuiltIn < CtrlAffineSys
             cd = obj.params.cd;
             v0 = obj.params.v0;
             g = obj.params.g;
-            B = z - T * v - 0.5 * (v0 - v).^2 / (cd * g);
+            B = z - T * v;
+            %B = z - T * v - 0.5 * (v0 - v).^2 / (cd * g);
         end
         function LfB = lf_cbf(obj, x)
             v = x(2);

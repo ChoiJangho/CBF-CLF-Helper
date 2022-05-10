@@ -29,6 +29,7 @@ function init_sys(obj, params)
         
         clf_ = obj.defineClf(params, x);
         cbf_ = obj.defineCbf(params, x);
+        
         obj.f_sym = matlabFunction(f_, 'vars', {x});
         obj.g_sym = matlabFunction(g_, 'vars', {x});
         

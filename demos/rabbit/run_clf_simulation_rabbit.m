@@ -98,6 +98,69 @@ t0 = 0;
 xs = xs';
 ts = ts';
 
+%% Step *. Experiment
+close all;
+for scale = 1.0:0.1:2.0
+    LfV_mismatch_array = [];
+    LgV_mismatch_array = [];
+    plant_sys = RabbitBuiltIn(params);
+    plant_sys.params.scale = scale;
+    for idx = 1:size(simul_mat, 1)
+        x_test = simul_mat(idx, :);
+        [y, dy, L2fy, LgLfy, ~] = control_sys.eval_y(x_test');
+        [y_hat, dy_hat, L2fy_hat, LgLfy_hat, ~] = plant_sys.eval_y(x_test');
+
+        eta = [y; dy];
+        delta_1 = L2fy_hat - LgLfy_hat * inv(LgLfy) * L2fy;
+        delta_2 = LgLfy_hat * inv(LgLfy) - eye(4);
+        P = control_sys.Gram_clf_FL;
+        G = control_sys.G_FL;
+
+        LfV_mismatch = 2*eta'*P*G*delta_1;
+        LgV_mismatch = 2*eta'*P*G*delta_2;
+
+        common = 2*eta'*P*G;
+        common_norm = norm(common);
+
+    %     LfV_mismatch = LfV_mismatch./common_norm;
+    %     LgV_mismatch = LgV_mismatch./common_norm;
+
+        LfV_mismatch_array = [LfV_mismatch_array; LfV_mismatch];
+        LgV_mismatch_array = [LgV_mismatch_array; LgV_mismatch];
+    end
+    figure()
+    subplot(511)
+    plot(perturb_head, LfV_mismatch_array);
+    title_descr = strcat("Mismatch term in time simulation", num2str(scale));
+    title(title_descr);
+    x_descr = strcat("LfV");
+    ylabel(x_descr);
+    grid on;
+    for i = 1:4
+        subplot(5,1,i+1)
+        plot(perturb_head, LgV_mismatch_array(:,i));
+        y_descr = strcat("LgV", num2str(i));
+        ylabel(y_descr);
+        grid on;
+    end
+end
+
+%% Sensitivity test
+% (1) scale sensitivity => graph style didn't change much.
+% (2) eta sensitivity
+% idea: we should fix other dimension of eta, while accessing to L2fy
+%       freely. Is there a map from 
+num_axis = 12;
+axis = 9;
+vec = zeros(num_axis, 1);
+vec(axis) = 1;
+perturb_dx = 0.002;
+num_step = 50;
+x_temp = xs(5, :);
+perturb_head = x_temp(axis) : perturb_dx : x_temp(axis) + perturb_dx * (num_step-1);
+simul_mat = repmat(x_temp, num_step, 1);
+simul_mat(:, axis) = perturb_head;
+
 %% Step 5. Plot the result
 plot_rabbit_result(xs, ts, us, extras);
 
