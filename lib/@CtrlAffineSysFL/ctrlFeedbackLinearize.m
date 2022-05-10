@@ -36,5 +36,7 @@ if strcmp(obj.output_option, 'phase')
     [u, extraout] = obj.ctrlFeedbackLinearizePhase(t, x, mu_, verbose, extraout);
 elseif strcmp(obj.output_option, 'siso')
     [u, extraout] = obj.ctrlFeedbackLinearizeSiso(t, x, mu_, verbose, extraout);
+elseif strcmp(obj.output_option, 'mimo')
+    [u, extraout] = obj.ctrlFeedbackLinearizeMimo(t, x, mu_, verbose, extraout);
 end
     

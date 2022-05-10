@@ -8,9 +8,12 @@ function init_sys_FL(obj, params)
         if strcmp(obj.output_option, 'siso')
             [y, z] = obj.defineOutputWithZeroCoords(params, x);
             obj.initOutputDynamicsSiso(x, f, g, y, z);
+        elseif strcmp(obj.output_option, 'mimo')
+            [y, z] = obj.defineOutputWithZeroCoords(params, x);
+            obj.initOutputDynamicsMimo(x, f, g, y, z);            
         elseif strcmp(obj.output_option, 'phase')
             [y, phase, y_max_exceed, y_min_exceed] = obj.defineOutputWithPhase(params, x);
-            obj.initOutputDynamics(x, f, g, y, phase, y_max_exceed, y_min_exceed, params);
+            obj.initOutputDynamics(x, f, g, y, phase, y_max_exceed, y_min_exceed, params);            
         else
             error("Unknown output_option.");
         end
@@ -53,6 +56,8 @@ function init_sys_FL(obj, params)
                         zeros(1, obj.rel_deg_y)];
             obj.G_FL = [zeros(obj.rel_deg_y-1, 1); 1];
         end
+    elseif strcmp(obj.output_option, 'mimo')
+        disp("Warning: Not implemented");
     elseif strcmp(obj.output_option, 'phase')
         obj.F_FL = [zeros(obj.ydim), eye(obj.ydim);
             zeros(obj.ydim), zeros(obj.ydim)];

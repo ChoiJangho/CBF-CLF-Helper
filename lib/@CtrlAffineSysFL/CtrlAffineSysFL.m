@@ -10,20 +10,31 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         G_FL
         % Dimension of output
         ydim
-        % Relative degree of y
+        % Relative degree of y. For siso, this is an integer. For mimo,
+        % this is a vector.
         rel_deg_y
         % Output as a function handle (assuming relative degree 2)
         y_sym
         phase_sym
+        % Dimension of the zero dynamics
+        zdim
         
         %% These are used for output_option: siso
         lfs_y_sym % Cell structure that contains high order derivatives of the output.
         lglfr_y_sym % LfLg^(rel_deg_y-1)y
+        % if mimo: xi_sym is (ydim, 1) cell, each containing (rel_deg_i, 1)
+        % array of high-order derivatives of y.
         xi_sym % output coordinates in the normal form        
         z_sym % zero dynamics coordinates in the normal form
-        % TODO:
-        internal_dynamics_sym % Currently not supported.
+        % SISO
+        % TODO: combine it with lf_z_sym
+        internal_dynamics_sym % Used for siso
         K_siso
+        % MIMO
+        decoupling_matrix_sym
+        lf_z_sym
+        lg_z_sym
+        K_mimo
         
         %% These are used for output_option: phase
         % 1st order Lie derivative of the output
