@@ -1,24 +1,51 @@
 classdef QuanserCartPole < CtrlAffineSys
+    properties        
+        a_max % Maximum acceleration of pivot (m/s^2)
+        Er % Reference Energy (J)
+        
+        eta_g % Planetary Gearbox Efficiency
+        eta_m % Motor ElectroMechanical Efficiency [ = Tm * w / ( Vm * Im ) ]
+
+        Jeq  % Lumped Mass of the Cart System (accounting for the rotor inertia)
+        Jp % Pendulum Moment of Inertia (kg.m^2) - approximation
+
+        Kt % Motor Torque Constant (N.m/A)
+        Kg % Planetary Gearbox (a.k.a. Internal) Gear Ratio
+        Km % Motor Back-EMF Constant (V.s/rad)
+        
+        lp % Distance from Pivot to Centre Of Gravity
+        Mp % Pendulum Mass (with T-fitting)        
+        Mc % Cart Mass
+        
+        Rm % Motor Armature Resistance (Ohm)
+        r_mp % Motor Pinion Radius (m)        
+        
+        gravity = 9.81;
+    end
     methods
         function obj = QuanserCartPole(params, varargin)
-            obj = obj@CtrlAffineSys(params, varargin{:});            
+            obj = obj@CtrlAffineSys(params, varargin{:});
+            [obj.Rm, Jm, obj.Kt, obj.eta_m, obj.Km, obj.Kg, obj.eta_g, obj.Mc, obj.r_mp, Beq] = ...
+                obj.config_ip02( params.IP02_LOAD_TYPE );
+            [obj.Mp, Lp, obj.lp, obj.Jp, Bp ] = obj.config_sp( params.PEND_TYPE );  
+            obj.Jeq = obj.Mc + obj.eta_g * obj.Kg^2 * Jm / obj.r_mp^2;
+            [obj.Er, obj.a_max] = d_swing_up(obj.eta_m, obj.eta_g, ...
+                obj.Kg, obj.Kt, obj.Rm, obj.r_mp, obj.Jeq, obj.Mp, obj.lp);            
         end
         function [s, f_vec, g_vec] = defineSystem(obj, params)
             % params:
                 % IP02_LOAD_TYPE: 'NO_LOAD', 'WEIGHT'
                 % PEND_TYPE: 'LONG_24IN', 'MEDIUM_12IN'
                 
-            % theta: heading, sigma: yaw rate
             syms x theta x_dot theta_dot
             
             s = [x; theta; x_dot; theta_dot];
             
+            %% Set up model parameters from the quanser functions.
             % Gravity
-            g = 9.81;
-            
+            gravity = 9.81;            
             [ Rm, Jm, Kt, eta_m, Km, Kg, eta_g, Mc, r_mp, Beq ] = ...
                 obj.config_ip02( params.IP02_LOAD_TYPE );
-            
             [ Mp, Lp, lp, Jp, Bp ] = obj.config_sp( params.PEND_TYPE );  
             
             % Lumped Mass of the Cart System (accounting for the rotor inertia)
@@ -34,15 +61,117 @@ classdef QuanserCartPole < CtrlAffineSys
 
             D = [Jeq+Mp, Mp*lp*costheta ;
                 Mp*lp*costheta, Jp+Mp*lp^2];
-            Cdq_g = [-Mp*lp*sintheta*theta_dot^2+Beq*x_dot; Mp*lp*g*sintheta+Bp*theta_dot];
+            Cdq_g = [-Mp*lp*sintheta*theta_dot^2+Beq*x_dot; Mp*lp*gravity*sintheta+Bp*theta_dot];
             B = [1;0];
             
             f_vec = [x_dot; theta_dot; D\ ((B*fc) - Cdq_g)];
             g_vec = [0; 0; D\(B*gc)];
             
+        end       
+                
+        function clf = defineClf(obj, params, x)
+            [~, f_, g_] = obj.defineSystem(params);
+            A_sym = jacobian(f_, x);
+            A = double(subs(A_sym, x, zeros(4, 1)));
+            B = double(subs(g_, x, zeros(4, 1)));
+
+%             Q = eye(obj.xdim);
+            Q = diag([100,100,0.01,0.01]);
+            R = obj.udim;
+            P = icare(A, B, Q, R);
+            clf = x' * P * x;
         end
         
-        function [ Mp, Lp, lp, Jp, Bp ] = config_sp(obj, PEND_TYPE )
+        function cbf = defineCbf(obj, params, x_sym)
+            x = x_sym(1);
+            x_dot = x_sym(3);
+            cbf = -2*x*x_dot + params.k_cbf*(params.x_lim^2 - x^2);
+        end
+        
+        function energy = get_total_energy(obj, x)
+            % total energy is 0 at rest when theta = pi (downright.
+            theta = x(2);
+            dtheta = x(4);            
+            energy = 0.5 * obj.Jp * dtheta^2 + obj.Mp * obj.lp * obj.gravity * (1 + cos(theta));            
+        end
+        
+        function energy = get_total_energy2(obj, x)
+            % total energy is 0 at rest when theta = 0 (upright).
+            theta = x(2);
+            dtheta = x(4);            
+            energy = 0.5 * obj.Jp * dtheta^2 + obj.Mp * obj.lp * obj.gravity * (-1 + cos(theta)); 
+        end        
+        
+        
+        function draw_cart_pole(obj, x, theta, force, text1, text2)
+            % theta: angle from below
+            l = 1;
+            xmin = -10; 
+            xmax = 10;    
+            height = 0.1;
+            width  = 0.3;
+            maxU = obj.u_max;
+            if isempty(maxU)
+                maxU = 10;
+            end
+            
+
+            % Compute positions 
+            cart = [ x + width,  height
+                     x + width, -height
+                     x - width, -height
+                     x - width,  height
+                     x + width,  height ];
+            pendulum = [x, 0; x+2*l*sin(theta), -cos(theta)*2*l];
+
+
+            clf; hold on
+            plot(0,2*l,'k+','MarkerSize',20,'linewidth',2)
+            plot([xmin, xmax], [-height-0.03, -height-0.03],'k','linewidth',2)
+
+            % Plot force
+            plot([0 force/maxU*xmax],[-0.3, -0.3],'g','linewidth',10)
+
+            % Plot the cart-pole
+            fill(cart(:,1), cart(:,2),'k','edgecolor','k');
+            plot(pendulum(:,1), pendulum(:,2),'r','linewidth',4)
+
+            % Plot the joint and the tip
+            plot(x,0,'y.','markersize',24)
+            plot(pendulum(2,1),pendulum(2,2),'y.','markersize',24)
+
+            % Text
+            text(0,-0.3,'applied force')
+            % text(0,-0.5,'immediate reward')
+            if exist('text1','var')
+              text(0,-0.9, text1)
+            end
+            if exist('text2','var')
+              text(0,-1.1, text2)
+            end
+
+            set(gca,'DataAspectRatio',[1 1 1],'XLim',[xmin xmax],'YLim',[-2 2]);
+            axis off;
+            drawnow;
+        end
+        
+        function fig = draw_rollout(obj, xs, us, ts, dt, title_text)
+            fig = figure;
+            for r = 1:length(ts)-1
+                obj.draw_cart_pole(xs(1, r), pi-xs(2, r), us(r),  ...
+                      ['t=' num2str(r*dt) ' sec'], title_text);
+                pause(dt);
+            end
+        end
+        
+        function p = get_linear_momentum(obj, x)
+            p = obj.Mc * x(3) + obj.Mp * (x(3) + 0.5 * obj.lp * cos(x(2)) * x(4));
+        end
+    end
+    
+    methods(Static)
+        %% These methods are provided by Quanser.
+        function [ Mp, Lp, lp, Jp, Bp ] = config_sp(PEND_TYPE)
             % from Inch to Meter
             K_IN2M = 0.0254;
             % Set these variables (used in Simulink Diagrams)
@@ -73,8 +202,8 @@ classdef QuanserCartPole < CtrlAffineSys
             end
         end
         
-        function [ Rm, Jm, Kt, eta_m, Km, Kg, eta_g, M, r_mp, Beq] = ...
-                config_ip02(obj, IP02_LOAD_TYPE)
+        function [ Rm, Jm, Kt, eta_m, Km, Kg, eta_g, Mc, r_mp, Beq] = ...
+                config_ip02(IP02_LOAD_TYPE)
             % from Inch to Meter
             K_IN2M = 0.0254;
             % from rad/s to RPM
@@ -103,36 +232,28 @@ classdef QuanserCartPole < CtrlAffineSys
             % Motor Pinion Radius (m)
             r_mp = 0.5 / 2 * K_IN2M;  %  = 6.35e-3
             if strcmp( IP02_LOAD_TYPE, 'NO_LOAD')
-                M = Mc2;
+                Mc = Mc2;
                 Beq = 4.3;
             elseif strcmp ( IP02_LOAD_TYPE, 'WEIGHT')
-                M = Mc2 + Mw;
+                Mc = Mc2 + Mw;
                 Beq = 5.4;
             elseif strcmp ( IP02_LOAD_TYPE, '2WEIGHTS')
-                M = Mc2 + 2*Mw;
+                Mc = Mc2 + 2*Mw;
                 Beq = 6.5;
             else 
                 error( 'Error: Set the IP02 load configuration.' )
             end
         end
-        
-        function clf = defineClf(obj, params, x)
-            [~, f_, g_] = obj.defineSystem(params);
-            A_sym = jacobian(f_, x);
-            A = double(subs(A_sym, x, zeros(4, 1)));
-            B = double(subs(g_, x, zeros(4, 1)));
 
-%             Q = eye(obj.xdim);
-            Q = diag([100,100,0.01,0.01]);
-            R = obj.udim;
-            P = icare(A, B, Q, R);
-            clf = x' * P * x;
+        function [Er, a_max] = d_swing_up(eta_m, eta_g, Kg, Kt, Rm, r_mp, Jeq, Mp, lp)
+            % Reference Energy (J)
+            Er = 2*Mp*lp*9.81;
+            % Maximum force for 5 V
+            Fc_max = (eta_m*eta_g*Kg*Kt*5)/(Rm*r_mp);
+            % Maximum acceleration of pivot (m/s^2)
+            a_max = (Fc_max / Jeq);
         end
         
-        function cbf = defineCbf(obj, params, x_sym)
-            x = x_sym(1);
-            x_dot = x_sym(3);
-            cbf = -2*x*x_dot + params.k_cbf*(params.x_lim^2 - x^2);
-        end
-    end
+    end        
+    
 end
