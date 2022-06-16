@@ -10,6 +10,8 @@ elseif isa(f_desired, 'numeric')
     f_desired_ = u_ref;
     extraout = [];
 end
-u = (f_desired_ + obj.constant_motor_drag * x(3)) / obj.constant_V2F;
+u_raw = (f_desired_ + obj.constant_motor_drag * x(3)) / obj.constant_V2F;
 extraout.f_desired = f_desired_;
+u = obj.clipInput(u_raw);
+extraout.u_raw = u_raw;
 end

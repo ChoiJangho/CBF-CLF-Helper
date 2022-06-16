@@ -8,7 +8,7 @@ function [u, extraout] = ctrl_hybrid_swing_up(obj, t, x, varargin)
     if isfield(kwargs, 'epsilon_switch')
         epsilon_switch = kwargs.epsilon_switch;        
     else
-        epsilon_switch = pi/12;
+        epsilon_switch = pi/18;
     end
     if isfield(kwargs, 'k_energy')
         k_energy = kwargs.k_energy;        

@@ -2,7 +2,7 @@ clear all;
 % close all;
 dt = 0.01;
 
-% Type options:
+% Chocice of Model Type: options:
 %   'ONES': set every model parameters to 1 (including the gravity)
 %   'QUANSER': Using the full quanser parameter values
 %   'QUANSER_NO_DRAG': Using the full quanser parameter values except for
@@ -11,35 +11,42 @@ dt = 0.01;
 params = get_predefined_parameter_set('QUANSER');
 
 % Set up input saturation limit.
-params.u_max = (params.m + params. M) * 6;
+params.u_max = (params.m + params. M) * 10;
 % Set up CLF-related parameters
 params.clf.rate = 0.5;
 params.weight_slack = 1e10;
 % Create the dynamic system to simulate.
-dynsys = CartPole(params);
+model_sys = CartPole(params);
+
+params.k_cbf = 10;
+params.x_lim = 0.3;
+params.cbf.rate = 10;
+dynsys = QuanserCartPole(params);
 
 %% Choice of controllers
-%% zero control input
+%% zero control input in voltage.
 % controller = @(x, varargin) dynsys.ctrl_zero([], x, varargin{:});
+%% zero control input in cart force.
+% controller = @(x, varargin) dynsys.ctrl_zero_force([], x, varargin{:});
 
-%% locally stabilizing controllers. (Sontag controller works very well)
-% controller = @dynsys.ctrlClfSontag;
-% controller = @dynsys.ctrlClfQp;
+%% Choice of high-level controller
+controller_for_force = @(x, varargin) model_sys.ctrlClfSontag(x, varargin{:});
+% controller_for_force = @(x, varargin) model_sys.ctrl_hybrid_swing_up( ...
+%   [], x, 'k_energy', 5, varargin{:});
 
-%% swing-up controllers (only the last one switches the control mode near the origin.)
-% controller = @(x, varargin) dynsys.ctrl_pump_energy([], x, varargin{:});
-% controller = @(x, varargin) dynsys.ctrl_pump_energy([], x, 'k_energy', 50, varargin{:});
-controller = @(x, varargin) dynsys.ctrl_hybrid_swing_up([], x, 'k_energy', 5, varargin{:});
 
-% Simulation time.
-T = 20;
-% Initial state
-% x0 = [0; pi/2; 0; 0];
-% x0 = [0; pi/12; 0; 0];
-x0 = [0; pi; 0; 0]; % released position.
-% x0 = [-0.42; 0.28; -0.135; -3.87];
+%% Low-level controller maps desired force to input voltage.
+controller = @(x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
+    [], x, controller_for_force, varargin{:});
 
-[xs, us, ts, extraout] = rollout_controller(x0, dynsys, dynsys, controller, T);
+T = 10;
+% x0 = [10*pi/12; 0; 0; 0];
+% x0 = [pi/12; 0; 0; 0];
+x0 = [0; pi; 0; 0];
+% x0 = [0; pi/24; 0; 0];
+% x0 = [-0.34; -0.19; -0.5; 2.17];
+
+[xs, us, ts, extraout] = rollout_controller(x0, dynsys, model_sys, controller, T);
 if isfield(extraout, 'swing_up')
     swing_up_flags = cell2mat(extraout.swing_up);
 end
@@ -117,4 +124,8 @@ line([ts(1), ts(end)], dynsys.potential_energy_upright() * ones(1, 2), 'Color', 
 ylabel('$E_p(t)$ (Pendulum Energy)');
 xlabel('$t$');
 grid on;
+
+
+% fig3 = dynsys.animate_cart_pole(xs, us, ts, 0.01, 'zero');
+
 

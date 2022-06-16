@@ -1,17 +1,43 @@
+%% Author Jason Choi (jason.choi@berkeley.edu)
+%% Reference, Tedrake, Underactuated Robotics
 classdef CartPoleSimple < CtrlAffineSysFL
+    %% Template class for the cart-pole type of systems.
+    %% Uses the dynamics model in Tedrake et al., there is no damping in this model.
     properties
         A_sym % Symbolix expression for the Jacobian matrix at the origin
         A_origin % Jacobian Matrix at the origin
         B_origin % Jacobian Matrix at the origin
+        l % Length of pendulum
+        m % Mass of pendulum
+        M % Mass of cart
+        gravity
+        J % Moment of inertia of the pendulum
     end
     
     methods
         function obj = CartPoleSimple(params, output_to_regulate, feedback_gain)
         % output_to_regulate: 'theta', 's'
+        %   'theta': regulate angle of the pendulum (default)
+        %   's': regulate position of the cart.
+        if nargin < 2
+            output_to_regulate = 'theta';
+        end
+        if nargin < 3            
+            feedback_gain = [9, 6];
+        end
             params.output_to_regulate = output_to_regulate;
             params.K_siso = feedback_gain;
             params.rel_deg_y = 2;
             obj@CtrlAffineSysFL(params, 'symbolic', 'siso');
+            obj.l = params.l;
+            obj.m = params.m;
+            obj.M = params.M;
+            obj.gravity = params.g;
+            if isfield(params, 'J')
+                obj.J = params.J;
+            else
+                obj.J = (1/3) * obj.m * obj.l^2;
+            end
         end
         
         function [x, f, g] = defineSystem(obj, params)
@@ -19,15 +45,16 @@ classdef CartPoleSimple < CtrlAffineSysFL
             m = params.m;  % [kg]     mass of pendulum
             M = params.M;  % [kg]     mass of cart
             gravity = params.g; % [m/s^2]  acceleration of gravity
-            if isfield(params, 'J');
+            if isfield(params, 'J')
                 J = params.J;
             else
                 J = (1/3) * m * l^2;
             end
-
+            
             syms s ds theta dtheta real
-            % theta: angle of the rod, upright is 0
-            % s: position of the cart.
+            % theta: angle of the rod, upright is 0, in the
+            % counter-clockwise direction.
+            % s: position of the cart. (positive in the direction to right.)
             % u: input force on the cart.
             x = [theta; s; dtheta; ds;];
 
@@ -53,66 +80,9 @@ classdef CartPoleSimple < CtrlAffineSysFL
                 z = [x(1); x(4)*cos(x(1))-x(3)];
             end
         end    
-        
-        function fig = draw_rollout(obj, xs, us, ts, dt, title_text)
-            fig = figure;
-            for r = 1:length(ts)-1
-                obj.draw_cart_pole(xs(2, r), pi+xs(1, r), us(r),  ...
-                      ['t=' num2str(r*dt) ' sec'], title_text);
-                pause(dt);
-            end
-        end
-        
-        function draw_cart_pole(obj, x, theta, force, text1, text2)
-            % theta: angle from below
-            l = 1;
-            xmin = -10; 
-            xmax = 10;    
-            height = 0.1;
-            width  = 0.3;
-            maxU = obj.u_max;
-            if isempty(maxU)
-                maxU = 10;
-            end
-            
-
-            % Compute positions 
-            cart = [ x + width,  height
-                     x + width, -height
-                     x - width, -height
-                     x - width,  height
-                     x + width,  height ];
-            pendulum = [x, 0; x+2*l*sin(theta), -cos(theta)*2*l];
-
-
-            clf; hold on
-            plot(0,2*l,'k+','MarkerSize',20,'linewidth',2)
-            plot([xmin, xmax], [-height-0.03, -height-0.03],'k','linewidth',2)
-
-            % Plot force
-            plot([0 force/maxU*xmax],[-0.3, -0.3],'g','linewidth',10)
-
-            % Plot the cart-pole
-            fill(cart(:,1), cart(:,2),'k','edgecolor','k');
-            plot(pendulum(:,1), pendulum(:,2),'r','linewidth',4)
-
-            % Plot the joint and the tip
-            plot(x,0,'y.','markersize',24)
-            plot(pendulum(2,1),pendulum(2,2),'y.','markersize',24)
-
-            % Text
-            text(0,-0.3,'applied force')
-            % text(0,-0.5,'immediate reward')
-            if exist('text1','var')
-              text(0,-0.9, text1)
-            end
-            if exist('text2','var')
-              text(0,-1.1, text2)
-            end
-
-            set(gca,'DataAspectRatio',[1 1 1],'XLim',[xmin xmax],'YLim',[-2 2]);
-            axis off;
-            drawnow;
+          
+        function p = get_linear_momentum(obj, x)
+            p = obj.M * x(4) + obj.m * (x(4) - obj.l * cos(x(1)) * x(3));
         end
     end
 end

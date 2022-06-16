@@ -2,9 +2,6 @@
 
 classdef QuanserCartPole < CartPole
     properties        
-        a_max % Maximum acceleration of pivot (m/s^2)
-        Er % Reference Energy (J)
-        
         constant_V2F % Motor voltage to cart force ratio 
         constant_motor_drag % Motor voltage to cart force ratio         
     end
@@ -35,6 +32,10 @@ classdef QuanserCartPole < CartPole
             params.constant_V2F= eta_g * Kg * Kt * eta_m / (Rm * r_mp);
             % Drag to cart induced by the motor
             params.constant_motor_drag = eta_g * Kg^2 * Kt * Km / (Rm * r_mp^2);            
+            
+            % Motor voltage limit: fyi, strict hardware limit is 10.
+            params.u_max = 8;
+            params.u_min = -8;
             
             % For Debug
             obj = obj@CartPole(params);
