@@ -1,11 +1,11 @@
 %% Example for CBF and CLF simulation for cartpole
-clear all;
-close all;
+% clear all;
+% close all;
 dt = 0.01;
 sim_t = 5;
-x0 = [0;deg2rad(180);0;0]; % downright
+% x0 = [0;deg2rad(180);0;0]; % downright
 % x0 = [0; 0; 0; 0]; % upright
-x0 = [0; 0.01; 0; 0]; % upright
+x0 = [0; deg2rad(90); 0; 0]; % upright
 
 
 params.IP02_LOAD_TYPE = 'NO_LOAD';

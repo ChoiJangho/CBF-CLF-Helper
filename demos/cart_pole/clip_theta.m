@@ -1,10 +1,9 @@
-function x_clipped = clip_theta(x)
-    x_clipped = x;
-    theta = x(3);
+function theta_clipped = clip_angle(theta)
+%% clip theta to the range of (-pi, pi]
     r = mod(theta, 2*pi);
     if r > pi
-        x_clipped(3) = r - 2*pi;
+        theta_clipped = r - 2*pi;
     else
-        x_clipped(3) = r;
+        theta_clipped = r;
     end
 end
