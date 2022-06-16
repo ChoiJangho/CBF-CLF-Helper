@@ -22,8 +22,9 @@ LfV = obj.lf_clf(x);
 LgV = obj.lg_clf(x);
 
 if LgV ~= 0
-    u = - (LfV + sqrt(LfV^2 + LgV^4)) / LgV;
+    u_raw = - (LfV + sqrt(LfV^2 + LgV^4)) / LgV;
 else
-    u = 0;
+    u_raw = 0;
 end
-extraout = [];
+u = obj.clipInput(u_raw);
+extraout.u_raw = u_raw;
