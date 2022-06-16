@@ -317,6 +317,7 @@ while ~end_simulation
     end            
     t = ts_t(end);
     x = xs_t(end, :)';
+    x = plant_sys.clip_state_angles(x);
     u_prev = u;
     %% Record traces.
     xs = [xs, x];

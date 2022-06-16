@@ -17,6 +17,7 @@ classdef CtrlAffineSys < handle
                 
         xdim % State dimension
         udim % Control input dimension
+        dims_angle % binary indicator of the angle variables. Used to clip it to (-pi, pi]
         n_clf % Number of clf in use
         n_cbf % Number of cbf in use
         

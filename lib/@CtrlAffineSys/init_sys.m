@@ -188,6 +188,11 @@ function init_sys(obj, params)
         error("Undefined setup_option.");
     end
     
+    if isfield(params, 'dims_angle')
+        obj.dims_angle = logical(params.dims_angle);
+    end
+
+    
     %% Parse parameters for both setup_option.
     % set cbf rate, clf rate
     if isfield(params, 'clf') && isfield(params.clf, 'rate')
@@ -311,7 +316,7 @@ function init_sys(obj, params)
     elseif size(g_test, 1) ~= obj.xdim || size(g_test, 2) ~= obj.udim
         error("g has wrong size.");
     end
-
+    
     if obj.n_clf >= 1
         clf_test = obj.clf(x_test);
         if numel(clf_test) ~= obj.n_clf
