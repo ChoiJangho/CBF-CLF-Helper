@@ -34,8 +34,12 @@ classdef QuanserCartPole < CartPole
             params.constant_motor_drag = eta_g * Kg^2 * Kt * Km / (Rm * r_mp^2);            
             
             % Motor voltage limit: fyi, strict hardware limit is 10.
-            params.u_max = 8;
-            params.u_min = -8;
+            if ~isfield(params, 'u_max')
+                params.u_max = 8;
+            end
+            if ~isfield(params, 'u_min')
+                params.u_min = -8;
+            end
             
             % For Debug
             obj = obj@CartPole(params);

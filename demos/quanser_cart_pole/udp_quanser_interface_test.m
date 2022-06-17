@@ -1,17 +1,28 @@
 clear all
 
-params.IP02_LOAD_TYPE = 'WEIGHT';
-params.PEND_TYPE = 'LONG_24IN';
-params.u_max = 10; % max voltage
-params.u_min = -10; % min voltage
-params.x_lim = 0.3;
-params.weight_slack = 1e3;
-params.k_cbf = 10;
+params = get_predefined_parameter_set('QUANSER');
 
-params.clf.rate = 1;
+% Set up input saturation limit.
+params.u_max = (params.m + params. M) * 10;
+% Set up CLF-related parameters
+params.clf.rate = 0.5;
+params.weight_slack = 1e10;
+% Create the dynamic system to simulate.
+model_sys = CartPole(params);
+
+params.k_cbf = 10;
+params.x_lim = 0.3;
 params.cbf.rate = 10;
-cartPole = QuanserCartPoleClone(params);
-controller = @cartPole.ctrlCbfClfQp;
+params.u_max = 6;
+params.u_min = -6;
+dynsys = QuanserCartPole(params);
+controller_for_force = @(x, varargin) model_sys.ctrl_hybrid_swing_up( ...
+  [], x, 'k_energy', 20, varargin{:});
+
+
+%% Low-level controller maps desired force to input voltage.
+controller = @(x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
+    [], x, controller_for_force, varargin{:});
 
 % UDP setting.
 PORT = 8080;  % port of this server
@@ -24,12 +35,12 @@ while true
         
         % data is the current state.
         x = datagram.Data;
+        disp(x)
         senderAdress = datagram.SenderAddress;
         senderPort = datagram.SenderPort;
         [u, ~] = controller(x');
-        disp(u)
-        write(udp_handle, u, "double", senderAdress, senderPort);
+        write(udp_handle, u, "double", senderAdress, 8081);
     end
-    pause(0.001);    
+    pause(0.002);    
 end
 % send back the same data to the client
