@@ -1,5 +1,6 @@
 clear all
 
+use_cbf_filter = true;
 params = get_predefined_parameter_set('QUANSER');
 
 % Set up input saturation limit.
@@ -11,18 +12,23 @@ params.weight_slack = 1e10;
 model_sys = CartPole(params);
 
 params.k_cbf = 10;
-params.x_lim = 0.3;
+params.x_lim = 0.35;
 params.cbf.rate = 10;
 params.u_max = 6;
 params.u_min = -6;
 dynsys = QuanserCartPole(params);
 controller_for_force = @(x, varargin) model_sys.ctrl_hybrid_swing_up( ...
   [], x, 'k_energy', 10, varargin{:});
-
-
-%% Low-level controller maps desired force to input voltage.
-controller = @(x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
-    [], x, controller_for_force, varargin{:});
+if ~use_cbf_filter
+    %% Low-level controller maps desired force to input voltage.
+    controller = @(x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
+        [], x, controller_for_force, varargin{:});
+else
+    controller_unfiltered = @(x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
+        [], x, controller_for_force, varargin{:});
+    controller = @(x, varargin) dynsys.ctrlCbfQp(x, ...
+        'u_ref', controller_unfiltered, varargin{:});
+end
 
 % UDP setting.
 PORT = 8080;  % port of this server
