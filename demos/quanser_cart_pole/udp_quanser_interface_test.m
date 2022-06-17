@@ -17,7 +17,7 @@ params.u_max = 6;
 params.u_min = -6;
 dynsys = QuanserCartPole(params);
 controller_for_force = @(x, varargin) model_sys.ctrl_hybrid_swing_up( ...
-  [], x, 'k_energy', 20, varargin{:});
+  [], x, 'k_energy', 10, varargin{:});
 
 
 %% Low-level controller maps desired force to input voltage.
