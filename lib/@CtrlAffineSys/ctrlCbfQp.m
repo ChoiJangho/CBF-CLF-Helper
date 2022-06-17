@@ -22,9 +22,15 @@ function [u, extraout] = ctrlCbfQp(obj, x, varargin)
     if ~isfield(kwargs, 'u_ref')
         % If u_ref is given, CLF-QP minimizes the norm of u-u_ref        
         % Default reference control input is u.
-        u_ref = zeros(obj.udim, 1);
+        u_ref_ = zeros(obj.udim, 1);
     else
         u_ref = kwargs.u_ref;
+        if isa(u_ref, 'function_handle')
+            [u_ref_, extraout] = u_ref(x, varargin{:});
+        elseif isa(u_ref, 'numeric')
+            u_ref_ = u_ref;
+            extraout = [];
+        end
     end
     if ~isfield(kwargs, 'with_slack')
         % Relaxing is activated in default condition.
@@ -46,7 +52,7 @@ function [u, extraout] = ctrlCbfQp(obj, x, varargin)
         end
         weight_slack = kwargs.weight_slack;
     end
-    if size(u_ref, 1) ~= obj.udim
+    if size(u_ref_, 1) ~= obj.udim
         error("Wrong size of u_ref, it should be (udim, 1) array.");
     end                
             
@@ -88,7 +94,7 @@ function [u, extraout] = ctrlCbfQp(obj, x, varargin)
         % cost = 0.5 [u' slack] H [u; slack] + f [u; slack]
         H = [obj.weight_input, zeros(obj.udim, obj.n_cbf);
             zeros(obj.n_cbf, obj.udim), diag(weight_slack)];
-        f_ = [-obj.weight_input * u_ref; zeros(obj.n_cbf, 1)];
+        f_ = [-obj.weight_input * u_ref_; zeros(obj.n_cbf, 1)];
         [u_slack, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2            
             feas = 0;
@@ -112,7 +118,7 @@ function [u, extraout] = ctrlCbfQp(obj, x, varargin)
     else
         % cost = 0.5 u' H u + f u    
         H = obj.weight_input;
-        f_ = -obj.weight_input * u_ref;
+        f_ = -obj.weight_input * u_ref_;
         [u, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2
             feas = 0;

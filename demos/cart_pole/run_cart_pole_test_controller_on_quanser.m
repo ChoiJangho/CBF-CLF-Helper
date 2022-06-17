@@ -21,6 +21,8 @@ model_sys = CartPole(params);
 params.k_cbf = 10;
 params.x_lim = 0.3;
 params.cbf.rate = 10;
+params.u_max = 6;
+params.u_min = -6;
 dynsys = QuanserCartPole(params);
 
 %% Choice of controllers
@@ -30,19 +32,27 @@ dynsys = QuanserCartPole(params);
 % controller = @(x, varargin) dynsys.ctrl_zero_force([], x, varargin{:});
 
 %% Choice of high-level controller
-controller_for_force = @(x, varargin) model_sys.ctrlClfSontag(x, varargin{:});
-% controller_for_force = @(x, varargin) model_sys.ctrl_hybrid_swing_up( ...
-%   [], x, 'k_energy', 5, varargin{:});
+% controller_for_force = @(x, varargin) model_sys.ctrlClfSontag(x, varargin{:});
+controller_for_force = @(x, varargin) model_sys.ctrl_hybrid_swing_up( ...
+  [], x, 'k_energy', 10, varargin{:});
 
+%% Applying safety filter to the swing-up controller
+% controller_for_force = @(x, varargin) model_sys.ctrl_hybrid_swing_up( ...
+%   [], x, 'k_energy', 10, varargin{:});
+% controller_unfiltered = @(x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
+%     [], x, controller_for_force, varargin{:});
+% controller = @(x, varargin) dynsys.ctrlCbfQp(x, ...
+%     'u_ref', controller_unfiltered, varargin{:});
 
 %% Low-level controller maps desired force to input voltage.
 controller = @(x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
     [], x, controller_for_force, varargin{:});
 
-T = 10;
+
+T = 20;
 % x0 = [10*pi/12; 0; 0; 0];
 % x0 = [pi/12; 0; 0; 0];
-x0 = [0; pi; 0; 0];
+x0 = [0; pi-0.01; 0; -0.01];
 % x0 = [0; pi/24; 0; 0];
 % x0 = [-0.34; -0.19; -0.5; 2.17];
 
@@ -74,6 +84,9 @@ end
 
 subplot(num_plots, 1, 1);
 plot(ts, xs(1, :));
+hold on;
+line([ts(1), ts(end)], params.x_lim * ones(1, 2), 'Color', 'r');
+line([ts(1), ts(end)], -params.x_lim * ones(1, 2), 'Color', 'r');
 ylabel('$x_1$ ($s$)');
 grid on;
 
