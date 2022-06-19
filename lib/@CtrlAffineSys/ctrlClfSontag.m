@@ -18,6 +18,7 @@ if obj.udim > 1
 end
 
 % Lie derivatives of the CLF.
+V = obj.clf(x);
 LfV = obj.lf_clf(x);
 LgV = obj.lg_clf(x);
 
@@ -28,3 +29,4 @@ else
 end
 u = obj.clipInput(u_raw);
 extraout.u_raw = u_raw;
+extraout.Vs = V;

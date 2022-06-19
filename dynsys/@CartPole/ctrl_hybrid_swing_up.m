@@ -25,10 +25,10 @@ function [u, extraout] = ctrl_hybrid_swing_up(obj, t, x, varargin)
        extraout.swing_up = 0;       
     else
         [u, extraout] = obj.ctrl_pump_energy(t, x, 'k_energy', k_energy);
-        extraout.slack = 0;
-        extraout.Vs = 0;
-        extraout.feas = 0;
-        extraout.comp_time = 0;
+        extraout.Vs = obj.clf(x);
+%         extraout.feas = 0;
+%         extraout.comp_time = 0;
+%        extraout.slack = 0;
         extraout.swing_up = 1;
     end
 end
