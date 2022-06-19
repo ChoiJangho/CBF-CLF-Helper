@@ -22,11 +22,6 @@ function [u, extraout] = ctrl_pump_energy(obj, t, x, varargin)
     dtheta = x(4);
     E = obj.pole_energy(x);
     delta_E = E - energy_desired;
-%     if delta_E > 0
-%         u = 0;
-%         extraout.E = E;
-%         return
-%     end
     
     if ~isempty(k_energy)
         u = - k_energy * dtheta * cos(theta) * delta_E;

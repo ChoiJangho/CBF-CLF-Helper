@@ -36,8 +36,12 @@ classdef QuanserCartPole < CartPole
             % Motor voltage limit: fyi, strict hardware limit is 10.
             if ~isfield(params, 'u_max')
                 params.u_max = 8;
+            elseif params.u_max > 8
+                params.u_max = 8;
             end
             if ~isfield(params, 'u_min')
+                params.u_min = -8;
+            elseif params.u_min < -8
                 params.u_min = -8;
             end
             

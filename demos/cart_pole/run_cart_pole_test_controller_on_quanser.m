@@ -2,14 +2,16 @@ clear all;
 % close all;
 dt = 0.01;
 
-% Chocice of Model Type: options:
+% Toggle to activate or deactivate CBF-QP.
+use_cbf_filter = true;
+% Choice of Model Type: options:
 %   'ONES': set every model parameters to 1 (including the gravity)
 %   'QUANSER': Using the full quanser parameter values
 %   'QUANSER_NO_DRAG': Using the full quanser parameter values except for
 %   the drag terms.
 %   'QUANSER_SIMPLE': Use only the mass and the length values from Quanser.
-params = get_predefined_parameter_set('QUANSER');
-
+% Choice of Quanser weight type: 'NO_LOAD', 'WEIGHT', '2WEIGHTS'
+params = get_predefined_params_set_for_vanilla_cart_pole('QUANSER', 'NO_LOAD');
 % Set up input saturation limit.
 params.u_max = (params.m + params. M) * 10;
 % Set up CLF-related parameters
@@ -18,12 +20,19 @@ params.weight_slack = 1e10;
 % Create the dynamic system to simulate.
 model_sys = CartPole(params);
 
+params = get_predefined_params_set_for_vanilla_cart_pole('QUANSER', '2WEIGHTS');
+% Set up input saturation limit.
+params.u_max = (params.m + params. M) * 10;
+% Set up CLF-related parameters
+params.clf.rate = 0.5;
+params.weight_slack = 1e10;
 params.k_cbf = 10;
-params.x_lim = 0.3;
+params.x_lim = 0.35;
 params.cbf.rate = 10;
 params.u_max = 6;
 params.u_min = -6;
-dynsys = QuanserCartPole(params);
+dynsys = QuanserCartPole(params, '2WEIGHTS');
+
 
 %% Choice of controllers
 %% zero control input in voltage.
@@ -36,17 +45,16 @@ dynsys = QuanserCartPole(params);
 controller_for_force = @(x, varargin) model_sys.ctrl_hybrid_swing_up( ...
   [], x, 'k_energy', 10, varargin{:});
 
-%% Applying safety filter to the swing-up controller
-% controller_for_force = @(x, varargin) model_sys.ctrl_hybrid_swing_up( ...
-%   [], x, 'k_energy', 10, varargin{:});
-% controller_unfiltered = @(x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
-%     [], x, controller_for_force, varargin{:});
-% controller = @(x, varargin) dynsys.ctrlCbfQp(x, ...
-%     'u_ref', controller_unfiltered, varargin{:});
-
-%% Low-level controller maps desired force to input voltage.
-controller = @(x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
-    [], x, controller_for_force, varargin{:});
+if ~use_cbf_filter
+    %% Low-level controller maps desired force to input voltage.
+    controller = @(x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
+        [], x, controller_for_force, varargin{:});
+else
+    controller_unfiltered = @(x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
+        [], x, controller_for_force, varargin{:});
+    controller = @(x, varargin) dynsys.ctrlCbfQp(x, ...
+        'u_ref', controller_unfiltered, varargin{:});
+end
 
 
 T = 20;
@@ -68,10 +76,16 @@ end
 Ps = zeros(size(ts));
 Es = zeros(size(ts));
 Eps = zeros(size(ts));
+Bs = zeros(size(ts));
+Vs = zeros(size(ts));
+cbf_constraints = zeros(size(ts));
 for i = 1:length(ts)
     Ps(i) = dynsys.linear_momentum(xs(:, i));
     Es(i) = dynsys.total_energy(xs(:, i));
     Eps(i) = dynsys.pole_energy(xs(:, i));
+    Bs(i) = dynsys.cbf(xs(:, i));
+    Vs(i) = dynsys.clf(xs(:, i));
+    cbf_constraints = dynsys.dcbf(xs(:, i), us(:, i)) + dynsys.cbf_rate * dynsys.cbf(xs(:, i));
 end
 
 fig = open_figure('font_size', 15, 'size', [1200, 900]);
@@ -139,6 +153,11 @@ xlabel('$t$');
 grid on;
 
 
+fig = plot_cart_pole_core_results(xs, us, ts, dynsys);
+
+save_figure(fig, 'file_name', 'swing_up_without_cbf_sim', 'file_format', 'pdf', 'figure_size', [12, 18]);
+
+% save_figure(fig, 'file_name', 'swing_up_with_cbf_sim', 'file_format', 'pdf', 'figure_size', [12, 18]);
 % fig3 = dynsys.animate_cart_pole(xs, us, ts, 0.01, 'zero');
 
 

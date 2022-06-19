@@ -19,9 +19,7 @@ classdef CartPole < CtrlAffineSys
         
         A_sym % Symbolix expression for the Jacobian matrix at the origin
         A_origin % Jacobian Matrix at the origin
-        B_origin % Jacobian Matrix at the origin
-        
-        
+        B_origin % Jacobian Matrix at the origin                
     end
     
     methods
@@ -45,16 +43,16 @@ classdef CartPole < CtrlAffineSys
                 params.b_pole = 0;
             end
             if ~isfield(params, 'u_max') && ~isfield(params, 'u_min')
-                params.u_max = params.m + params. M;
+                params.u_max = (params.m + params.M) * 10;
                 % This is roughly limiting the maximal acceleration of the
-                % cart to be 1m/s^2.
+                % cart to be 10 m/s^2.
                 params.u_min = -params.u_max;
             elseif ~isfield(params, 'u_min')
                 params.u_min = -params.u_max;
             elseif ~isfield(params, 'u_max')
                 params.u_max = -params.u_min;
             end
-            
+                        
             params.dims_angle = [0, 1, 0, 0]; % the second state is the angle variable.
             
             obj@CtrlAffineSys(params, 'symbolic');
