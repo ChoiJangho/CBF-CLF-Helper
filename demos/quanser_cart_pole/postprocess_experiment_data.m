@@ -8,7 +8,7 @@ us_raw = squeeze(us.signals.values);
 
 us = interp1(ts_us, us_raw, ts, 'linear')';
 
-params = get_predefined_parameter_set('QUANSER');
+params = get_predefined_params_set_for_vanilla_cart_pole('QUANSER', 'WEIGHT');
 % Set up CLF-related parameters
 params.clf.rate = 0.5;
 params.weight_slack = 1e10;

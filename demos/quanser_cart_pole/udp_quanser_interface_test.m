@@ -1,7 +1,7 @@
 clear all
 
 use_cbf_filter = true;
-params = get_predefined_parameter_set('QUANSER');
+params = get_predefined_params_set_for_vanilla_cart_pole('QUANSER', 'WEIGHT');
 
 % Set up input saturation limit.
 params.u_max = (params.m + params. M) * 10;
