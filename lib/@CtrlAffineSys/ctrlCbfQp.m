@@ -1,4 +1,4 @@
-function [u, extraout] = ctrlCbfQp(obj, x, varargin)
+function [u, extraout] = ctrlCbfQp(obj, t, x, varargin)
 %% [u, extraout] = ctrlCbfQp(obj, x, varagin)
 %% Implementation of vanilla CBF-QP
 % Inputs:   x: state
@@ -26,7 +26,7 @@ function [u, extraout] = ctrlCbfQp(obj, x, varargin)
     else
         u_ref = kwargs.u_ref;
         if isa(u_ref, 'function_handle')
-            [u_ref_, extraout] = u_ref(x, varargin{:});
+            [u_ref_, extraout] = u_ref(t, x, varargin{:});
         elseif isa(u_ref, 'numeric')
             u_ref_ = u_ref;
             extraout = [];

@@ -17,16 +17,16 @@ params.cbf.rate = 10;
 params.u_max = 6;
 params.u_min = -6;
 dynsys = QuanserCartPole(params);
-controller_for_force = @(x, varargin) model_sys.ctrl_hybrid_swing_up( ...
-  [], x, 'k_energy', 10, varargin{:});
+controller_for_force = @(t, x, varargin) model_sys.ctrl_hybrid_swing_up_for_hardware_test( ...
+  t, x, 'k_energy', 10, varargin{:});
 if ~use_cbf_filter
     %% Low-level controller maps desired force to input voltage.
-    controller = @(x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
-        [], x, controller_for_force, varargin{:});
+    controller = @(t, x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
+        t, x, controller_for_force, varargin{:});
 else
-    controller_unfiltered = @(x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
-        [], x, controller_for_force, varargin{:});
-    controller = @(x, varargin) dynsys.ctrlCbfQp(x, ...
+    controller_unfiltered = @(t, x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
+        t, x, controller_for_force, varargin{:});
+    controller = @(t, x, varargin) dynsys.ctrlCbfQp(t, x, ...
         'u_ref', controller_unfiltered, varargin{:});
 end
 
@@ -44,7 +44,7 @@ while true
         disp(x)
         senderAdress = datagram.SenderAddress;
         senderPort = datagram.SenderPort;
-        [u, ~] = controller(x');
+        [u, ~] = controller([], x');
         write(udp_handle, u, "double", senderAdress, 8081);
     end
     pause(0.002);    

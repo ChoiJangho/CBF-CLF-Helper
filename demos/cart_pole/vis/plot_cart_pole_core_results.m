@@ -29,14 +29,28 @@ for i = 1:length(ts)
     cbf_constraints(i) = dynsys.dcbf(xs(:, i), us(:, i)) + dynsys.cbf_rate * dynsys.cbf(xs(:, i));
 end
 
+if ~isempty(extras) && isfield(extras, 'LfBhat')
+    gp_mean = zeros(size(ts));
+    gp_upper = zeros(size(ts));
+    gp_lower = zeros(size(ts));
+    for i = 1:length(ts)
+        gp_mean(i) = extras.LfBhat{i} + extras.LgBhat{i} * us(:, i) - dynsys.dcbf(xs(:, i), us(:, i));
+        gp_upper(i) = extras.LfBhat{i} + extras.LgBhat{i} * us(:, i) + extras.beta{i} * extras.sigma{i} - dynsys.dcbf(xs(:, i), us(:, i));
+        gp_lower(i) = extras.LfBhat{i} + extras.LgBhat{i} * us(:, i) - extras.beta{i} * extras.sigma{i} - dynsys.dcbf(xs(:, i), us(:, i));
+    end
+end
+
 if plot_full_state && ~isempty(extras)
-    num_plots = 11;
+    % num_plots = 11;
+    num_plots = 9;
 elseif ~isempty(extras)
-    num_plots = 9;
-elseif plot_full_state
-    num_plots = 9;
-else
     num_plots = 7;
+elseif plot_full_state
+%    num_plots = 9;
+    num_plots = 7;
+else
+%    num_plots = 7;
+    num_plots = 5;
 end
 fig = open_figure('font_size', 15, 'size', [1200, num_plots * 200]);
 tile = tiledlayout(num_plots, 1);
@@ -98,19 +112,19 @@ ylabel('$u$');
 grid on;
 xlim([ts(1), ts(end)]);
 
-nexttile;
-plot(ts, Eps);
-hold on;
-line([ts(1), ts(end)], dynsys.potential_energy_upright() * ones(1, 2), 'Color', 'r');
-ylabel('$E_p(t)$ (Pendulum Energy)');
-grid on;
-xlim([ts(1), ts(end)]);
-
-nexttile;
-plot(ts, Vs);
-ylabel('$V(x(t))$ (CLF)');
-grid on;
-xlim([ts(1), ts(end)]);
+% nexttile;
+% plot(ts, Eps);
+% hold on;
+% line([ts(1), ts(end)], dynsys.potential_energy_upright() * ones(1, 2), 'Color', 'r');
+% ylabel('$E_p(t)$ (Pendulum Energy)');
+% grid on;
+% xlim([ts(1), ts(end)]);
+% 
+% nexttile;
+% plot(ts, Vs);
+% ylabel('$V(x(t))$ (CLF)');
+% grid on;
+% xlim([ts(1), ts(end)]);
 
 nexttile;
 plot(ts, Bs);
@@ -118,11 +132,24 @@ ylabel('$B(x(t))$ (CBF)');
 grid on;
 xlim([ts(1), ts(end)]);
 
-nexttile;
-plot(ts, cbf_constraints);
-ylabel('$\tilde{\dot{B}}(x,u) + \gamma B(x)$');
-grid on;
-xlim([ts(1), ts(end)]);
+if ~isempty(extras) && isfield(extras, 'LfBhat')
+    nexttile;
+    plot(ts, gp_mean, 'LineWidth', 2); hold on;
+    plot(ts, gp_lower, 'r');
+    plot(ts, gp_upper, 'r');
+    if ~isempty(train_data)
+        scatter(train_data.ts_train, train_data.zs_train, 'x');
+    end
+    grid on;
+    xlim([ts(1), ts(end)]);
+    ylabel('$\tilde{\dot{B}} + \mu \pm \beta \sigma$');
+else
+    nexttile;
+    plot(ts, cbf_constraints);
+    ylabel('$\tilde{\dot{B}}(x,u) + \gamma B(x)$');
+    grid on;
+    xlim([ts(1), ts(end)]);
+end
 
 if ~isempty(extras)
     nexttile;

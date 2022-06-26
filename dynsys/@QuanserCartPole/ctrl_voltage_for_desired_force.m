@@ -5,7 +5,7 @@ function [u, extraout] = ctrl_voltage_for_desired_force(obj, t, x, f_desired, va
 % This can be considered as a low-level controller of converting the force
 % control command to the motorl voltage command.
 if isa(f_desired, 'function_handle')
-    [f_desired_, extraout] = f_desired(x, varargin{:});
+    [f_desired_, extraout] = f_desired(t, x, varargin{:});
 elseif isa(f_desired, 'numeric')
     f_desired_ = u_ref;
     extraout = [];
