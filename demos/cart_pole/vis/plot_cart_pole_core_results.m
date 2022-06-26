@@ -40,11 +40,21 @@ if ~isempty(extras) && isfield(extras, 'LfBhat')
     end
 end
 
+if ~isempty(extras) && isfield(extras, 'lambda_dagger')
+lambdas = cell2mat(extras.lambda_dagger);
+end
+
 if plot_full_state && ~isempty(extras)
     % num_plots = 11;
     num_plots = 9;
+    if isfield(extras, 'lambda_dagger')
+        num_plots = 10;
+    end
 elseif ~isempty(extras)
     num_plots = 7;
+    if isfield(extras, 'lambda_dagger')
+        num_plots = 8;
+    end
 elseif plot_full_state
 %    num_plots = 9;
     num_plots = 7;
@@ -142,7 +152,7 @@ if ~isempty(extras) && isfield(extras, 'LfBhat')
     end
     grid on;
     xlim([ts(1), ts(end)]);
-    ylabel('$\tilde{\dot{B}} + \mu \pm \beta \sigma$');
+    ylabel('$\mu \pm \beta \sigma$');
 else
     nexttile;
     plot(ts, cbf_constraints);
@@ -164,6 +174,14 @@ if ~isempty(extras)
     ylim([0, 50]);
     grid on;
     xlim([ts(1), ts(end)]);
+
+    if isfield(extras, 'lambda_dagger')
+        nexttile;
+        plot(ts, lambdas);
+        ylabel('$\lambda_\dagger$');
+        grid on;
+    xlim([ts(1), ts(end)]);
+    end
 end
 xlabel('$t$');
 
