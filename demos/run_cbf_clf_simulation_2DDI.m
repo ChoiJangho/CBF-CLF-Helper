@@ -1,3 +1,4 @@
+
 close all;
 clear all;
 % Init state.
@@ -10,7 +11,7 @@ params.p_o = [5; 2];
 % obstacle radius.
 params.r_o = 2; 
 
-dt = 0.002;
+dt = 0.01;
 sim_t = 30;
 
 params.cbf_gamma0 = 1;
@@ -27,7 +28,7 @@ params.weight.input = 5;
 dynsys = DoubleIntegrator2D(params);
 
 [xs, us, ts, extraout] = rollout_controller( ...
-    x0, dynsys, dynsys, @dynsys.ctrlCbfClfQp, sim_t);
+    x0, dynsys, @dynsys.ctrl_cbf_clf_qp, sim_t);
 plot_results(ts, xs, us, params.p_o, params.r_o)
 
 function plot_results(t, xs, us, p_o, r_o)

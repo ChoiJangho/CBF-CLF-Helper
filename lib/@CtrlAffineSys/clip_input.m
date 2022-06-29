@@ -1,4 +1,4 @@
-function u = clipInput(obj, u)
+function u = clip_input(obj, u)
 
 %% Clip input
 if ~isempty(obj.u_max)

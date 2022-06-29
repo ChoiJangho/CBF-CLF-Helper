@@ -1,5 +1,9 @@
+%% This example demonstrates
+% - the default usage of the CtrlAffineSys, both in 'symbolic' and 'built-in' options.
+% - the default usage of the built-in controllers, e.g. CBF-CLF-QP.
+% - the default usage of the built-in simulation functions, e.g. ``rollout_controller``.
 clear all; 
-% close all;
+close all;
 
 dt = 0.02;
 sim_t = 15;
@@ -34,11 +38,11 @@ params.xdim = 3;
 params.udim = 1;
 
 %% Either option works.
-% acc_sys = AccSymbolic(params);
-acc_sys = AccBuiltIn(params);
+acc_sys = AccSymbolic(params);
+% acc_sys = AccBuiltIn(params);
 
 [xs, us, ts, extraout] = rollout_controller( ...
-    x0, acc_sys, acc_sys, @acc_sys.ctrlCbfClfQp, sim_t, 'verbose_level', 1);
+    x0, acc_sys, @acc_sys.ctrl_cbf_clf_qp, sim_t, 'verbose_level', 1);
 Vs = extraout.Vs;
 Bs = extraout.Bs;
 slacks = extraout.slacks;

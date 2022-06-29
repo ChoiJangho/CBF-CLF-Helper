@@ -1,7 +1,10 @@
-%% Example for multiple CBF constraints.
+%% This example demonstrates
+%   - passing additional input arguments when defining the controller
+%   function handle.
+%   - usage of multiple CBF constraints in the CBF-QP/CBF-CLF-QP.
 clear all;
 close all;
-dt = 0.0005a;
+dt = 0.0005;
 sim_t = 20;
 x0 = [0;5;0];
 
@@ -9,7 +12,7 @@ params.v = 1; % velocity
 params.u_max = 4; % max yaw rate (left)
 params.u_min = -4; % min yaw rate (right)
 
-% Obstacle position
+% Obstacle position (length is the number of obstacles).
 params.xo = [5, 11];
 params.yo = [4, 4];
 % Obstacle radius
@@ -29,11 +32,11 @@ dubins = DubinsCar(params);
 
 weight_slack_for_cbfs = 100 * ones(size(params.d));
 
-controller = @(x, varargin) dubins.ctrlCbfClfQp(x, ...
+controller = @(t, x, varargin) dubins.ctrl_cbf_clf_qp(t, x, ...
     'weight_slack', [params.weight_slack, weight_slack_for_cbfs], varargin{:});
 
 [xs, us, ts, extraout] = rollout_controller( ...
-    x0, dubins, dubins, controller, sim_t, 'dt', dt);
+    x0, dubins, controller, sim_t, 'dt', dt);
 Bs = extraout.Bs;
 plot_results(ts, xs, us, Bs, [params.xo;params.yo], params.d)
 

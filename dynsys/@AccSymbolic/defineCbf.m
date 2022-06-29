@@ -6,6 +6,5 @@ function cbf = defineCbf(obj, params, symbolic_state)
     T = params.T;
     cd = params.cd;
     
-    %cbf = z - T * v - 0.5  * (v0-v)^2 / (cd * params.g);
-    cbf = z - T * v;
+    cbf = z - T * v - 0.5  * (v0-v)^2 / (cd * params.g);
 end
