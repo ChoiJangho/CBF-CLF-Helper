@@ -139,7 +139,7 @@ extraout = struct;
 % Initialize state & time.
 x = x0;
 t = t0;
-u_prev = zeros(plant_sys.udim, 1);
+ctrl_prev = zeros(plant_sys.udim, 1);
 
 end_simulation = false;
 %% Run simulation.
@@ -153,10 +153,10 @@ if length(u_dummy) ~= udim
     error("controller output u size is different from plant_sys.udim");
 end
 
-if isfield(extra_dummy, 'u_prev')
-    pass_u_prev = true;
+if isfield(extra_dummy, 'ctrl_prev')
+    pass_ctrl_prev = true;
 else
-    pass_u_prev = false;
+    pass_ctrl_prev = false;
 end
 
 while ~end_simulation
@@ -166,12 +166,14 @@ while ~end_simulation
     if t == t0 && ~isempty(u0)
         u = u0;
         extra_t = extra_dummy;
-    elseif pass_u_prev
+    elseif pass_ctrl_prev
         [u, extra_t] = controller(t, x, ...
-            'u_prev', u_prev, 'verbose', (verbose_level>=2));
+            'ctrl_prev', ctrl_prev, 'verbose', (verbose_level>=2));
+        ctrl_prev = extra_t.ctrl_prev;    
     else
         [u, extra_t] = controller(t, x, 'verbose', (verbose_level>=2));
     end
+    
     if verbose_level >= 1
         print_log(t, x, u, extra_t);
     end
@@ -203,7 +205,6 @@ while ~end_simulation
     end
     if isfield(extra_t, 'mu')
         mus = [mus, extra_t.mu];
-        mu_prev = extra_t.mu;
     end        
     
     %% Run simulation for one time step.
@@ -224,15 +225,14 @@ while ~end_simulation
     t = ts_t(end);
     x = xs_t(end, :)';
     x = plant_sys.clip_state_angles(x);
-    u_prev = u;
     %% Record traces.
     xs = [xs, x];
     ts = [ts, t];
 end % end of the main while loop
 %% Add control input for the final timestep.
-if pass_u_prev
+if pass_ctrl_prev
     [u, extra_t] = controller(t, x, ...
-        'u_prev', u_prev, 'verbose', (verbose_level>=2));
+        'u_prev', ctrl_prev, 'verbose', (verbose_level>=2));
 else        
     [u, extra_t] = controller(t, x, 'verbose', (verbose_level>=2));
 end
@@ -297,7 +297,7 @@ end % end of the main function.
 
 
 function extras = fetch_other_extras(extras, extra_t)
-    if isempty(extras)
+    if length(fieldnames(extras)) == 0
         if ~isempty(extra_t)
             extras_field_name = fieldnames(extra_t);
         else

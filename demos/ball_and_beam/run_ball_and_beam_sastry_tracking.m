@@ -27,12 +27,11 @@ virtual_input_controller = @(t, x, varargin) model.ctrlSisoTracking( ...
 
 fl_controller = @(t, x, varargin) model.ctrlFeedbackLinearize( ...
     t, x, virtual_input_controller, varargin{:});
-pd_controller = @(x, varargin) model.ctrlPD(x, varargin{:});
 
 x0 = [0; 0; 0; 0];
 
 t_sim = 40;
-[xs, us, ts, extraout] = rollout_time_varying_controller(x0, plant, model, fl_controller, ...
+[xs, us, ts, extraout] = rollout_controller(x0, plant, fl_controller, ...
     t_sim, 'end_event_function', @(t, x) plant.ball_out_of_range(t, x));
 xis = cell2mat(extraout.xi);
 xi_ds = cell2mat(extraout.xi_d);
@@ -121,8 +120,7 @@ ylabel('$\ddot{y}$');
 xlabel('$t$ [sec]');
 grid on; 
 
-
-% if plot_animation
-%     animate_ball_and_beam_sastry(ts, xs, ref_ps, save_video, 4);
-% end
+if plot_animation
+    animate_ball_and_beam_sastry(ts, xs, ref_ps, save_video, 4);
+end
 

@@ -5,20 +5,9 @@ classdef KinematicVehicle < CtrlAffineSys
             syms x y v theta sig
             
             s = [x; y; v; theta; sig];
-            if params.unmodeled_factor.active
-                steer_offset = params.unmodeled_factor.steer_offset;
-                kv = params.unmodeled_factor.velocity_skid_coeff;
-                ka = params.unmodeled_factor.angular_skid_coeff;
-                mu = params.unmodeled_factor.friction;
-                
-                f = [v*cos(theta);v*sin(theta);-mu;v*(sig+steer_offset);0];
-                % u1: longitudinal acceleration, u2: angular acceleration.
-                g = [0, 0; 0, 0; kv, 0; 0, 0; 0, ka];                
-            else
-                f = [v*cos(theta);v*sin(theta);0;v*sig;0];
-                % u1: longitudinal acceleration, u2: angular acceleration.
-                g = [0, 0; 0, 0; 1, 0; 0, 0; 0, 1];                
-            end
+            f = [v*cos(theta);v*sin(theta);0;v*sig;0];
+            % u1: longitudinal acceleration, u2: angular acceleration.
+            g = [0, 0; 0, 0; 1, 0; 0, 0; 0, 1];
         end
         
         function clf = defineClf(~, params, symbolic_s)

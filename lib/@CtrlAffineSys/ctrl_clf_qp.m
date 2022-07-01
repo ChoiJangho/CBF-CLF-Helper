@@ -20,10 +20,11 @@ function [u, extraout] = ctrl_clf_qp(obj, t, x, varargin)
     
     kwargs = parse_function_args(varargin{:});
     
-    % If u_ref is given, QP minimizes the norm of u-u_ref
+    % QP minimizes the norm of u-u_ref
     if ~isfield(kwargs, 'u_ref')            
         % Default reference control input is 0.
         u_ref_ = zeros(obj.udim, 1);
+        u_ref = u_ref_;
     else
         u_ref = kwargs.u_ref;
         if isa(u_ref, 'function_handle')
@@ -31,28 +32,27 @@ function [u, extraout] = ctrl_clf_qp(obj, t, x, varargin)
         elseif isa(u_ref, 'numeric')
             u_ref_ = u_ref;
         elseif isa(u_ref, 'char')
-            if ~strcmp(u_ref, 'min_u_diff')
-                error("Currently, u_ref as string option only supports 'min_u_diff'");
+            if ~strcmp(u_ref, 'min_ctrl_diff')
+                error("Currently, u_ref as string option only supports 'min_ctrl_diff'");
             end
-            % 'u_prev' should be provided as extra argument in order to use 'min_u_diff' option.
+            % 'ctrl_prev' should be provided as extra argument in order to use 'min_ctrl_diff' option.
             % otherwise, it assumes that it's the very beginning of the
             % simulation and use u_prev = zeros(obj.udim, 1);
             u_prev = zeros(obj.udim, 1);
-            if isfield(kwargs, 'u_prev')
-                u_prev = kwargs.u_prev;
+            if isfield(kwargs, 'ctrl_prev')
+                u_prev = kwargs.ctrl_prev;
             end
             %% determines the portion of |u - u_prev| weight compared to |u|
             % 1: minimizes |u - u_prev|^2
             % 0: minimizes |u|^2
-            ratio_u_diff = 1;
-            if isfield(kwargs, 'ratio_u_diff')
-                if ratio_u_diff > 1 || ratio_u_diff < 0
+            ratio_ctrl_diff = 1;
+            if isfield(kwargs, 'ratio_ctrl_diff')
+                if ratio_ctrl_diff > 1 || ratio_ctrl_diff < 0
                     error("ratio_u_diff should be a value between 0 and 1.");
                 end                                
-                ratio_u_diff = kwargs.ratio_u_diff;
+                ratio_ctrl_diff = kwargs.ratio_ctrl_diff;
             end
-            u_ref_ = ratio_u_diff * u_prev;
-            extraout.u_prev = u_prev;
+            u_ref_ = ratio_ctrl_diff * u_prev;
         else
             error("Unknown u_ref type.");
         end
@@ -168,4 +168,7 @@ function [u, extraout] = ctrl_clf_qp(obj, t, x, varargin)
     extraout.Vs = Vs;
     extraout.feas = feas;
     extraout.comp_time = comp_time;
+    if isa(u_ref, 'char') && strcmp(u_ref, 'min_ctrl_diff')
+        extraout.ctrl_prev = u;
+    end
 end

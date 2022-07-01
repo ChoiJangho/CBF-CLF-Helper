@@ -61,14 +61,14 @@ close all; clear all;
 %   0: use slack variable while solving QP
 %   1: not use slack variable while solving QP
 
-params = init_clf_simulation_rabbit;
+init_clf_simulation_rabbit;
 %% Control Barrier Function Parameters
 params.cbf.rate = 50;
 % Used in the cbf.
 params.gamma_b = 100;
 %% Settings for the Stepping stones
 step_width = 0.05;
-steps_min = [0.35, 0.35];
+steps_min = [0.35, 0.34, 0.36, 0.34];
 steps_max = steps_min + step_width;
 dt = 0.025;
 nstep = length(steps_min);
@@ -83,10 +83,9 @@ plant_sys = RabbitBuiltIn(params);
 
 % Reflect model uncertainty here
 plant_sys.params.scale = 1.0;
-%plant_sys.params.torso_add = 10;
 
-cbf_clf_qp_controller = @(x, varargin) control_sys...
-        .ctrlFeedbackLinearize(x, @control_sys.ctrlCbfClfQpFL, varargin{:});
+cbf_clf_qp_controller = @(t, x, varargin) control_sys...
+        .ctrlFeedbackLinearize(t, x, @control_sys.ctrlCbfClfQpFL, varargin{:});
 reset_event_func = @plant_sys.rabbit_event;
 reset_map_func = @plant_sys.reset_map_with_step_update;
 exit_func = @control_sys.exit_event;
@@ -100,9 +99,9 @@ t0 = 0;
 %% Step 4. Main Simulation
 % Rollout the simulation
 [xs, us, ts, extras] = rollout_controller_for_multiple_resets(...
-    x0, plant_sys, control_sys, cbf_clf_qp_controller, ...
+    x0, plant_sys, cbf_clf_qp_controller, ...
     reset_event_func, reset_map_func, nstep,...
-    'with_slack', with_slack, 'verbose_level', verbose_level, ...
+    'verbose_level', verbose_level, ...
     'dt', dt, 'T_exit', 1, 'exclude_pre_reset', 1, 'exit_function', exit_func);
 extras.forces = plant_sys.get_force(xs, us);
 
@@ -119,22 +118,6 @@ for i = 1:nstep
         steps_max(i) * ones(index_reset(i+1)-index_reset(i)-1, 1)];    
     l_max_t{i} = steps_max(i) * ones(index_reset(i+1)-index_reset(i), 1);
 end
-% for j=1:length(ts)
-%     
-%     [ds, u, FSt_u_p, FSt_nu_p, y_out, dy_out, CBF] = five_link_dynamics_cbf_clf(t_vec(j), s_vec(j, :)');
-%     Fst = FSt_u_p*u + FSt_nu_p;
-%     Fst_vec = [Fst_vec;Fst'];  
-%     u_vec = [u_vec;u'];
-%     y_out_vec = [y_out_vec; y_out'];
-%     dy_out_vec = [dy_out_vec; dy_out'];
-%     
-%     if control_type == 4 || control_type == 5 || control_type == 6 || control_type == 7
-%         lf = p_LeftToe(s_vec(j,1:n)')-p_RightToe(s_vec(j,1:n)');
-%         lf_vec = [lf_vec;lf(1)];
-%         CBF_vec = [CBF_vec;CBF.'];
-%     end
-%         
-% end
 
 extras.l_min_t = l_min_t;
 extras.l_max_t = l_max_t;

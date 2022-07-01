@@ -33,7 +33,7 @@ approx_fl_controller = @(t, x, varargin) approx_dyn_sys.ctrlFeedbackLinearize( .
 
 x0 = [0; v_trim; 0; 0; 0; 0];
 t_sim = 4;
-[xs, us, ts, extraout] = rollout_time_varying_controller(x0, plant, plant, approx_fl_controller, t_sim);
+[xs, us, ts, extraout] = rollout_controller(x0, plant, approx_fl_controller, t_sim);
 ys = extraout.ys;
 % ys_d = cell2mat(extraout.y_d);
 % xi_ds = cell2mat(extraout.xi_d);

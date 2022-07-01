@@ -88,7 +88,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
            
             obj@CtrlAffineSys(params, setup_option);
             obj.output_option = output_option;
-            obj.init_sys_FL(params);
+            obj.init_sys_FL();
         end
         
         function [y, phase, y_max_exceed, y_min_exceed] = defineOutputWithPhase(obj, params, symbolic_state)

@@ -8,7 +8,7 @@ dt = 0.01;
 %   'QUANSER_NO_DRAG': Using the full quanser parameter values except for
 %   the drag terms.
 %   'QUANSER_SIMPLE': Use only the mass and the length values from Quanser.
-params = get_predefined_parameter_set('QUANSER');
+params = get_predefined_params_set_for_vanilla_cart_pole('QUANSER');
 
 % Set up input saturation limit.
 params.u_max = (params.m + params. M) * 6;
@@ -20,16 +20,16 @@ dynsys = CartPole(params);
 
 %% Choice of controllers
 %% zero control input
-% controller = @(x, varargin) dynsys.ctrl_zero([], x, varargin{:});
+% controller = @(t, x, varargin) dynsys.ctrl_zero(t, x, varargin{:});
 
 %% locally stabilizing controllers. (Sontag controller works very well)
 % controller = @dynsys.ctrlClfSontag;
 % controller = @dynsys.ctrlClfQp;
 
 %% swing-up controllers (only the last one switches the control mode near the origin.)
-% controller = @(x, varargin) dynsys.ctrl_pump_energy([], x, varargin{:});
-% controller = @(x, varargin) dynsys.ctrl_pump_energy([], x, 'k_energy', 50, varargin{:});
-controller = @(x, varargin) dynsys.ctrl_hybrid_swing_up([], x, 'k_energy', 5, varargin{:});
+% controller = @(t, x, varargin) dynsys.ctrl_pump_energy(t, x, varargin{:});
+% controller = @(t, x, varargin) dynsys.ctrl_pump_energy(t, x, 'k_energy', 50, varargin{:});
+controller = @(t, x, varargin) dynsys.ctrl_hybrid_swing_up(t, x, 'k_energy', 5, varargin{:});
 
 % Simulation time.
 T = 20;
@@ -39,7 +39,7 @@ T = 20;
 x0 = [0; pi; 0; 0]; % released position.
 % x0 = [-0.42; 0.28; -0.135; -3.87];
 
-[xs, us, ts, extraout] = rollout_controller(x0, dynsys, dynsys, controller, T);
+[xs, us, ts, extraout] = rollout_controller(x0, dynsys, controller, T);
 if isfield(extraout, 'swing_up')
     swing_up_flags = cell2mat(extraout.swing_up);
 end

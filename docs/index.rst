@@ -42,5 +42,5 @@ Run files in the directory ``demos`` in MATLAB.
    :caption: Contents:
 
    api/classes
-   api/functions/sim
+   api/functions
    api/demos

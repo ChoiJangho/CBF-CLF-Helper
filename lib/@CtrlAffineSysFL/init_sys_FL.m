@@ -1,29 +1,29 @@
-function init_sys_FL(obj, params)
+function init_sys_FL(obj)
 %% Functions that initialize dynamic system
     %% Symbolic Function
     if strcmp(obj.setup_option, 'symbolic')
         disp(['Setting up feedback linearization dynamics, CLFs, CBFs from defined symbolic expressions.', ...
             '(This might take time.)']);
-        [x, f, g] = obj.defineSystem(params);
+        [x, f, g] = obj.defineSystem(obj.params);
         if strcmp(obj.output_option, 'siso')
-            [y, z] = obj.defineOutputWithZeroCoords(params, x);
+            [y, z] = obj.defineOutputWithZeroCoords(obj.params, x);
             obj.initOutputDynamicsSiso(x, f, g, y, z);
         elseif strcmp(obj.output_option, 'mimo')
-            [y, z] = obj.defineOutputWithZeroCoords(params, x);
+            [y, z] = obj.defineOutputWithZeroCoords(obj.params, x);
             obj.initOutputDynamicsMimo(x, f, g, y, z);            
         elseif strcmp(obj.output_option, 'phase')
-            [y, phase, y_max_exceed, y_min_exceed] = obj.defineOutputWithPhase(params, x);
-            obj.initOutputDynamics(x, f, g, y, phase, y_max_exceed, y_min_exceed, params);            
+            [y, phase, y_max_exceed, y_min_exceed] = obj.defineOutputWithPhase(obj.params, x);
+            obj.initOutputDynamics(x, f, g, y, phase, y_max_exceed, y_min_exceed, obj.params);            
         else
             error("Unknown output_option.");
         end
     
     %% Non Symbolic Function
     elseif strcmp(obj.setup_option, 'built-in')
-        if ~isfield(params, 'rel_deg_y')
+        if ~isfield(obj.params, 'rel_deg_y')
             error("rel_deg_y should be specified for built-in setup.");
         end
-        obj.rel_deg_y = params.rel_deg_y; % TODO: other way to judge it?
+        obj.rel_deg_y = obj.params.rel_deg_y; % TODO: other way to judge it?
         if obj.rel_deg_y ~= 2
             error("Not Suppported");
         end
@@ -33,15 +33,15 @@ function init_sys_FL(obj, params)
     end
     %% Set up desired linear output dynamics
     %% Both Symbolic and Non-symbolic
-    if ~isfield(params, 'epsilon_FL') && ~isfield(params, 'eps_FL')
+    if ~isfield(obj.params, 'epsilon_FL') && ~isfield(obj.params, 'eps_FL')
         disp(['[Warning] The rate of RES-CLF, epsilon_FL, is set to a default value 1', ...
-            'It is strongly recommended to use a custom value (which can be specified by params.epsilon_FL).']);
+            'It is strongly recommended to use a custom value (which can be specified by obj.params.epsilon_FL).']);
         eps = 1;
-    elseif isfield(params, 'epsilon_FL')
-        eps = params.epsilon_FL;
+    elseif isfield(obj.params, 'epsilon_FL')
+        eps = obj.params.epsilon_FL;
         obj.params = rmfield(obj.params, 'epsilon_FL');
-    elseif isfield(params, 'eps_FL')
-        eps = params.eps_FL;
+    elseif isfield(obj.params, 'eps_FL')
+        eps = obj.params.eps_FL;
         obj.params = rmfield(obj.params, 'eps_FL');
     end
     obj.eps_FL = eps;
@@ -71,6 +71,6 @@ function init_sys_FL(obj, params)
     
     %% TODO: temporal code structure. Discuss with Wonsuhk how to deal with this.
     if strcmp(obj.output_option, 'phase')
-        obj.initClfFl(params);
+        obj.initClfFl(obj.params);
     end
 end
