@@ -7,7 +7,7 @@ function init_sys(obj, params)
         return
     end
     obj.params = params;
-        
+    %% Symbolic System
     if strcmp(obj.setup_option, 'symbolic') || strcmp(obj.setup_option, 'symbolic-built-in')
         disp(['Setting up the dynamics, CLFs, CBFs from defined symbolic expressions.', ...
             '(This might take time.)']);
@@ -41,9 +41,6 @@ function init_sys(obj, params)
         obj.xdim = size(x, 1);
         obj.udim = size(g_, 2);
         
-        clf_ = obj.defineClf(params, x);
-        cbf_ = obj.defineCbf(params, x);
-        
         obj.f_sym = matlabFunction(f_, 'vars', {x});
         obj.g_sym = matlabFunction(g_, 'vars', {x});
         if generate_clone
@@ -51,16 +48,19 @@ function init_sys(obj, params)
             matlabFunction(f_, 'file', f_file_str, 'vars', {obj_, x});
             g_file_str = fullfile(clone_class_path, 'g');
             matlabFunction(g_, 'file', g_file_str, 'vars', {obj_, x});
-        end        
+        end      
+
+        % Retrieve all clfs and cbfs that is defined.
+        clf_all = obj.defineClf(params, x);
+        cbf_all = obj.defineCbf(params, x);
         
+        clf_mask = get_mask('clf', params, length(clf_all));
+        cbf_mask = get_mask('cbf', params, length(cbf_all));
+        
+        clf_ = clf_all(clf_mask);
+        cbf_ = cbf_all(cbf_mask);
+
         if ~isempty(clf_)
-            if ~iscell(clf_)
-                if length(clf_) ~=1
-                    error("Defined CLF should be a scalar. For multiple CLFs, %s", ...
-                        "use a cell array.");
-                end
-                clf_ = {clf_};
-            end
             obj.n_clf = length(clf_);
             clf_sym = cell(obj.n_clf, 1);
             lf_clf_sym = cell(obj.n_clf, 1);
@@ -157,6 +157,7 @@ function init_sys(obj, params)
         end
         
     elseif strcmp(obj.setup_option, 'built-in')
+        %% BuiltIn System
         % extract param information and inject to object's property
         % xdim, udim, n_clf, n_cbf 
         if ~isfield(params, 'xdim')
@@ -168,7 +169,21 @@ function init_sys(obj, params)
         end
         obj.udim = params.udim;
         x_test = zeros(obj.xdim, 1);
-        n_clf = 1;
+        % Beta ver. active constraint
+        n_clf_total = length(obj.clf_all(x_test));
+        n_cbf_total = length(obj.cbf_all(x_test));
+        
+        clf_mask = get_mask('clf', params, n_clf_total);
+        cbf_mask = get_mask('cbf', params, n_cbf_total);
+        
+        paren = @(x, varargin) x(varargin{:});
+        obj.clf_builtin = @(x) paren(obj.clf_all(x), clf_mask);
+        obj.lf_clf_builtin = @(x) paren(obj.lf_clf_all(x), clf_mask);
+        obj.lg_clf_builtin = @(x) paren(obj.lg_clf_all(x), clf_mask);
+        obj.cbf_builtin = @(x) paren(obj.cbf_all(x), cbf_mask);
+        obj.lf_cbf_builtin = @(x) paren(obj.lfcbf_all(x), cbf_mask);
+        obj.lg_cbf_builtin = @(x) paren(obj.lgcbf_all(x), cbf_mask);
+        
         try
             clf_test = obj.clf(x_test);
             n_clf = length(clf_test);
@@ -176,7 +191,7 @@ function init_sys(obj, params)
             n_clf = 0;
         end
         obj.n_clf = n_clf;
-        n_cbf = 1;
+        
         try
             cbf_test = obj.cbf(x_test);
             n_cbf = length(cbf_test);
@@ -349,4 +364,20 @@ function init_sys(obj, params)
     
     fprintf(obj.get_dynsys_summary())
     obj.is_sys_initialized = true;
+end
+function mask = get_mask(constraint_name, params, n_total)
+    % Mask Parameter
+    if n_total == 0
+        mask = [];
+        return
+    end
+    if isfield(params, 'active_constraint') &&...
+            isfield(params.active_constraint, constraint_name)
+        mask = params.active_constraint.(constraint_name);
+        if max(mask) > n_total
+            error("All constraint indices should be smaller than the number of pre-defined constraint");
+        end
+    else
+        mask = 1:n_total;
+    end
 end

@@ -30,23 +30,34 @@ params.u_min  = -params.cd * params.m * params.g;
 params.clf.rate = 5;
 params.cbf.rate = 5;
 
-
 params.weight.input = 2/params.m^2;
 params.weight.slack = 2e-2;
 
 params.xdim = 3;
 params.udim = 1;
 
-%% Either option works.
-acc_sys = AccSymbolic(params);
-% acc_sys = AccBuiltIn(params);
+%% Debug (Signature)
+% clf_index = [1, 2];
+% cbf_index = [1, 2];
+% additional_index = [1];
+% % Activate the constraint index. (index is counted by the initial indexes)
+% acc_sys.set_active_constraint("clf", clf_index, "cbf", cbf_index, "additional", additional_index);
+params.active_constraint.clf = 2; % Use first clf constraint
+params.active_constraint.cbf = []; % Use first cbf constraint
 
+%% Either option works.
+%acc_sys = AccSymbolic(params);
+acc_sys = AccBuiltIn(params);
+acc_sys.set_active_constraint("clf", [0, 2]);
+
+% [xs, us, ts, extraout] = rollout_controller( ...
+%     x0, acc_sys, @acc_sys.ctrl_cbf_clf_qp, sim_t, 'verbose_level', 1);
 [xs, us, ts, extraout] = rollout_controller( ...
-    x0, acc_sys, @acc_sys.ctrl_cbf_clf_qp, sim_t, 'verbose_level', 1);
-Vs = extraout.Vs;
+    x0, acc_sys, @acc_sys.ctrl_cbf_qp, sim_t, 'verbose_level', 1);
+%Vs = extraout.Vs;
 Bs = extraout.Bs;
 slacks = extraout.slacks;
-plot_results(ts, xs, us, slacks, Bs, Vs, params);
+%plot_results(ts, xs, us, slacks, Bs, Vs, params);
 
 
 function plot_results(ts, xs, us, slacks, Bs, Vs, params)

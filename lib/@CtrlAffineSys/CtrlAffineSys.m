@@ -33,10 +33,17 @@ classdef CtrlAffineSys < handle
         % (when they exist) is not recommended.
         % (Always preferred to refer directly to the class properties.)
         params
-               
+        
+        %% Function handles for builtin-class
+        clf_builtin
+        cbf_builtin
+        lf_clf_builtin
+        lg_clf_builtin
+        lf_cbf_builtin
+        lg_cbf_builtin
+        
         %% Functions generated from symbolic expressions.
         % (Used when setup_option is 'symbolic'.)
-
         f_sym % :math:`f` function generated from symbolic expression
         g_sym % :math:`g` function generated from symbolic expression
         cbf_sym % CBF function generated from symbolic expression
@@ -97,7 +104,7 @@ classdef CtrlAffineSys < handle
                 setup_option = 'built-in';
             end
             obj.setup_option = setup_option;
-            obj.init_sys(params);
+            obj.init_sys(params); % initialize non-constraint params
         end
         
         function [x, f, g] = defineSystem(obj, params)
@@ -176,13 +183,15 @@ classdef CtrlAffineSys < handle
         % x can be multiple elements (size: (xdim, n_element))
         % Vs:  (size: (obj.n_clf, n_element))
             if strcmp(obj.setup_option, 'built-in')
-                error("For 'built-in' setup_option, obj.clf(x) should be overriden by user.");                
-            end
-            n_states = size(x, 2);
-            Vs = zeros(obj.n_clf, n_states);
-            for i = 1:obj.n_clf
-                clf_i = obj.clf_sym{i}(x);
-                Vs(i, :) = clf_i;
+                Vs = obj.clf_builtin(x);
+                %error("For 'built-in' setup_option, obj.clf(x) should be overriden by user.");                
+            else
+                n_states = size(x, 2);
+                Vs = zeros(obj.n_clf, n_states);
+                for i = 1:obj.n_clf
+                    clf_i = obj.clf_sym{i}(x);
+                    Vs(i, :) = clf_i;
+                end
             end
         end
         
@@ -193,13 +202,15 @@ classdef CtrlAffineSys < handle
         % x can be multiple elements (size: (xdim, n_element))
         % LfVs:  (size: (obj.n_clf, n_element))
             if strcmp(obj.setup_option, 'built-in')
-                error("For 'built-in' setup_option, obj.lf_clf(x) should be overriden by user.");
-            end
-            n_states = size(x, 2);
-            LfVs = zeros(obj.n_clf, n_states);
-            for i = 1:obj.n_clf               
-                lf_clf_i = obj.lf_clf_sym{i}(x);
-                LfVs(i, :) = lf_clf_i;
+                LfVs = obj.lf_clf_builtin(x);
+                %error("For 'built-in' setup_option, obj.lf_clf(x) should be overriden by user.");
+            else
+                n_states = size(x, 2);
+                LfVs = zeros(obj.n_clf, n_states);
+                for i = 1:obj.n_clf               
+                    lf_clf_i = obj.lf_clf_sym{i}(x);
+                    LfVs(i, :) = lf_clf_i;
+                end
             end
         end
         
@@ -210,13 +221,14 @@ classdef CtrlAffineSys < handle
         % x can be multiple elements (size: (xdim, n_element))
         % LgVs:  (size: (obj.n_clf, obj.udim, n_element))        
             if strcmp(obj.setup_option, 'built-in')
-                error("For 'built-in' setup_option, obj.lg_clf(x) should be overriden by user.");
-            end
-            n_states = size(x, 2);
-            LgVs = zeros(obj.n_clf, obj.udim, n_states);
-            for i = 1:obj.n_clf
-                lg_clf_i = reshape(obj.lg_clf_sym{i}(x), [], obj.udim)';
-                LgVs(i, :, :) = lg_clf_i;
+                LgVs = obj.lg_clf_builtin(x);
+            else
+                n_states = size(x, 2);
+                LgVs = zeros(obj.n_clf, obj.udim, n_states);
+                for i = 1:obj.n_clf
+                    lg_clf_i = reshape(obj.lg_clf_sym{i}(x), [], obj.udim)';
+                    LgVs(i, :, :) = lg_clf_i;
+                end
             end
         end
         
@@ -240,13 +252,14 @@ classdef CtrlAffineSys < handle
         % x can be multiple elements (size: (xdim, n_element))
         % Bs:  (size: (obj.n_cbf, n_element))
             if strcmp(obj.setup_option, 'built-in')
-                error("For 'built-in' setup_option, obj.cbf(x) should be overriden by user.");                
-            end
-            n_states = size(x, 2);
-            Bs = zeros(obj.n_cbf, n_states);
-            for i = 1:obj.n_cbf
-                cbf_i = obj.cbf_sym{i}(x);
-                Bs(i, :) = cbf_i;
+                Bs = obj.cbf_builtin(x);
+            else
+                n_states = size(x, 2);
+                Bs = zeros(obj.n_cbf, n_states);
+                for i = 1:obj.n_cbf
+                    cbf_i = obj.cbf_sym{i}(x);
+                    Bs(i, :) = cbf_i;
+                end
             end
         end
         
@@ -257,13 +270,14 @@ classdef CtrlAffineSys < handle
         % x can be multiple elements (size: (xdim, n_element))
         % LfBs: (size: (obj.n_cbf, n_element))
             if strcmp(obj.setup_option, 'built-in')
-                error("For 'built-in' setup_option, obj.lf_cbf(x) should be overriden by user.");
-            end
-            n_states = size(x, 2);
-            LfBs = zeros(obj.n_cbf, n_states);
-            for i = 1:obj.n_cbf               
-                lf_cbf_i = obj.lf_cbf_sym{i}(x);
-                LfBs(i, :) = lf_cbf_i;
+                LfBs = obj.lf_cbf_builtin(x);
+            else
+                n_states = size(x, 2);
+                LfBs = zeros(obj.n_cbf, n_states);
+                for i = 1:obj.n_cbf               
+                    lf_cbf_i = obj.lf_cbf_sym{i}(x);
+                    LfBs(i, :) = lf_cbf_i;
+                end
             end
         end
         
@@ -274,13 +288,14 @@ classdef CtrlAffineSys < handle
         % x can be multiple elements (size: (xdim, n_element))
         % LgBs: (size: (obj.n_cbf, obj.udim, n_element))
             if strcmp(obj.setup_option, 'built-in')
-                error("For 'built-in' setup_option, obj.lg_cbf(x) should be overriden by user.");
-            end
-            n_states = size(x, 2);
-            LgBs = zeros(obj.n_cbf, obj.udim, n_states);
-            for i = 1:obj.n_cbf
-                lg_cbf_i = reshape(obj.lg_cbf_sym{i}(x), [], obj.udim)';
-                LgBs(i, :, :) = lg_cbf_i;
+                LgBs = obj.lg_cbf_builtin(x);
+            else
+                n_states = size(x, 2);
+                LgBs = zeros(obj.n_cbf, obj.udim, n_states);
+                for i = 1:obj.n_cbf
+                    lg_cbf_i = reshape(obj.lg_cbf_sym{i}(x), [], obj.udim)';
+                    LgBs(i, :, :) = lg_cbf_i;
+                end
             end
         end
         
