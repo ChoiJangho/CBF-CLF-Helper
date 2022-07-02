@@ -189,8 +189,8 @@ function init_sys(obj, params)
         obj.lf_clf_builtin = @(x) paren(obj.lf_clf_all(x), clf_mask);
         obj.lg_clf_builtin = @(x) paren(obj.lg_clf_all(x), clf_mask);
         obj.cbf_builtin = @(x) paren(obj.cbf_all(x), cbf_mask);
-        obj.lf_cbf_builtin = @(x) paren(obj.lfcbf_all(x), cbf_mask);
-        obj.lg_cbf_builtin = @(x) paren(obj.lgcbf_all(x), cbf_mask);
+        obj.lf_cbf_builtin = @(x) paren(obj.lf_cbf_all(x), cbf_mask);
+        obj.lg_cbf_builtin = @(x) paren(obj.lg_cbf_all(x), cbf_mask);
         
         try
             clf_test = obj.clf(x_test);
