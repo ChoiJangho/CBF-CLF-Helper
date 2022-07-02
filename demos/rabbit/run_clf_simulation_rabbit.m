@@ -5,8 +5,7 @@
 % available controllers in @CtrlAffineSysFL/ and @CtrlAffineSys/.
 % This script is constitued of six sections. 
 %   Section 1. Set simulation settings and model settings
-%   Section 2. Define the control system, plant system and reflect model
-%           uncertianty to the model.
+%   Section 2. Define the rabbit system based on the params setting.
 %   Section 3. Initialize the state to start simulation
 %   Section 4. Run simulation using rollout_controller_for_multiple_resets
 %   Section 5. Plot the result of the simulation
@@ -29,10 +28,6 @@
 %       2: print also the log of the rollout
 %       3: print also the log of the controller
 %
-% Uncertainty Setting
-%   You can reflect the uncertainty of the model by tuning this value.
-%   plant_sys.params.scale = mass-scale ratio
-%   plant_sys.params.torso_add = additional torso mass
 %
 % Controller & Sensor
 %   clf_qp_controller: Controller that defines the behavior in continuous
@@ -67,15 +62,14 @@ nstep = 5;
 with_slack = true;
 verbose_level = 1;
 
-%% Step 2. Prepare System (Uncertainty control)
-control_sys = RabbitBuiltIn(params);
-plant_sys = RabbitBuiltIn(params);
+%% Step 2. Prepare System
+rabbit_sys = RabbitBuiltIn(params);
 
-clf_qp_controller = @(t, x, varargin) control_sys...
-        .ctrlFeedbackLinearize(t, x, @control_sys.ctrlClfQpFL, varargin{:});
-reset_event_func = @plant_sys.rabbit_event;
-reset_map_func = @plant_sys.reset_map;
-exit_func = @control_sys.exit_event;
+clf_qp_controller = @(t, x, varargin) rabbit_sys...
+        .ctrlFeedbackLinearize(t, x, @rabbit_sys.ctrlClfQpFL, varargin{:});
+reset_event_func = @rabbit_sys.rabbit_event;
+reset_map_func = @rabbit_sys.reset_map;
+exit_func = @rabbit_sys.exit_event;
 
 %% Step 3. Initialize state
 % Initialize the state vector.
@@ -86,7 +80,7 @@ t0 = 0;
 %% Step 4. Main Simulation
 % Rollout the simulation
 [xs, us, ts, extras] = rollout_controller_for_multiple_resets(...
-    x0, plant_sys, clf_qp_controller, ...
+    x0, rabbit_sys, clf_qp_controller, ...
     reset_event_func, reset_map_func, nstep,...
     'verbose_level', verbose_level, ...
     'dt', dt, 'T_exit', 1, 'exclude_pre_reset', 1, 'exit_function', exit_func);
@@ -99,7 +93,7 @@ plot_rabbit_result(xs, ts, us, extras);
 %% Step 6. Five Link Animation
 % This is only designed for enabling animation of bipedal walker
 global animation_scale 
-animation_scale = plant_sys.params.scale;
+animation_scale = rabbit_sys.params.scale;
 animation_dt = 0.05;
 x_quan_vec = coordinateTransformation(xs);
 anim_flat_ground(ts, x_quan_vec, animation_dt, true)
