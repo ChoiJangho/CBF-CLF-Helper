@@ -37,17 +37,12 @@ params.xdim = 3;
 params.udim = 1;
 
 %% Debug (Signature)
-% clf_index = [1, 2];
-% cbf_index = [1, 2];
-% additional_index = [1];
-% % Activate the constraint index. (index is counted by the initial indexes)
-% acc_sys.set_active_constraint("clf", clf_index, "cbf", cbf_index, "additional", additional_index);
 params.active_constraint.clf = 2; % Use first clf constraint
-params.active_constraint.cbf = []; % Use first cbf constraint
+params.active_constraint.cbf = [1]; % Use first cbf constraint
 
 %% Either option works.
-%acc_sys = AccSymbolic(params);
-acc_sys = AccBuiltIn(params);
+acc_sys = AccSymbolic(params);
+%acc_sys = AccBuiltIn(params);
 acc_sys.set_active_constraint("clf", [0, 2]);
 
 % [xs, us, ts, extraout] = rollout_controller( ...

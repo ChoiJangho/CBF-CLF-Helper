@@ -36,7 +36,7 @@ controller = @(t, x, varargin) dubins.ctrl_cbf_clf_qp(t, x, ...
     'weight_slack', [params.weight_slack, weight_slack_for_cbfs], varargin{:});
 
 [xs, us, ts, extraout] = rollout_controller( ...
-    x0, dubins, controller, sim_t, 'dt', dt);
+    x0, dubins, controller, sim_t, 'dt', dt, 'verbose_level', 1);
 Bs = extraout.Bs;
 plot_results(ts, xs, us, Bs, [params.xo;params.yo], params.d)
 

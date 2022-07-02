@@ -61,6 +61,14 @@ function init_sys(obj, params)
         cbf_ = cbf_all(cbf_mask);
 
         if ~isempty(clf_)
+            if ~iscell(clf_)
+                if length(clf_) ~=1
+                    error("Defined CBF should be a scalar. For multiple CBFs, %s", ...
+                        "use a cell array.");
+                end
+                clf_ = {clf_};
+            end
+            
             obj.n_clf = length(clf_);
             clf_sym = cell(obj.n_clf, 1);
             lf_clf_sym = cell(obj.n_clf, 1);
