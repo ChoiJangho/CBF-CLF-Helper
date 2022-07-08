@@ -36,23 +36,16 @@ params.weight.slack = 2e-2;
 params.xdim = 3;
 params.udim = 1;
 
-%% Debug (Signature)
-params.active_constraint.clf = 2; % Use first clf constraint
-params.active_constraint.cbf = [1]; % Use first cbf constraint
-
 %% Either option works.
 acc_sys = AccSymbolic(params);
-%acc_sys = AccBuiltIn(params);
-acc_sys.set_active_constraint("clf", [0, 2]);
+acc_sys.set_constraints_mask("clf_active", 1);
 
-% [xs, us, ts, extraout] = rollout_controller( ...
-%     x0, acc_sys, @acc_sys.ctrl_cbf_clf_qp, sim_t, 'verbose_level', 1);
 [xs, us, ts, extraout] = rollout_controller( ...
-    x0, acc_sys, @acc_sys.ctrl_cbf_qp, sim_t, 'verbose_level', 1);
-%Vs = extraout.Vs;
+    x0, acc_sys, @acc_sys.ctrl_cbf_clf_qp, sim_t, 'verbose_level', 1);
+Vs = extraout.Vs;
 Bs = extraout.Bs;
 slacks = extraout.slacks;
-%plot_results(ts, xs, us, slacks, Bs, Vs, params);
+plot_results(ts, xs, us, slacks, Bs, Vs, params);
 
 
 function plot_results(ts, xs, us, slacks, Bs, Vs, params)

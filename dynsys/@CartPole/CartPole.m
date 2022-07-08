@@ -55,7 +55,7 @@ classdef CartPole < CtrlAffineSys
                         
             params.dims_angle = [0, 1, 0, 0]; % the second state is the angle variable.
             
-            obj@CtrlAffineSys(params, 'symbolic');
+            obj@CtrlAffineSys(params, 'symbolic', false);
             obj.l = params.l;
             obj.m = params.m;
             obj.M = params.M;            

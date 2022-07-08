@@ -3,8 +3,8 @@
 %   function handle.
 %   - usage of multiple CBF constraints in the CBF-QP/CBF-CLF-QP.
 clear all;
-close all;
-dt = 0.0005;
+% close all;
+dt = 0.01;
 sim_t = 20;
 x0 = [0;5;0];
 
@@ -29,11 +29,15 @@ params.weight_slack = 1;
 params.cbf.rate = 50;
 
 dubins = DubinsCar(params);
+dubins.set_constraints_mask('cbf_active', 1);
 
-weight_slack_for_cbfs = 100 * ones(size(params.d));
+weight_slack_for_cbfs = 100 * ones(dubins.n_cbf_active);
 
+% controller = @(t, x, varargin) dubins.ctrl_cbf_clf_qp(t, x, ...
+%     'weight_slack', [params.weight_slack, weight_slack_for_cbfs], varargin{:});
 controller = @(t, x, varargin) dubins.ctrl_cbf_clf_qp(t, x, ...
-    'weight_slack', [params.weight_slack, weight_slack_for_cbfs], varargin{:});
+    'weight_slack', params.weight_slack, varargin{:});
+
 
 [xs, us, ts, extraout] = rollout_controller( ...
     x0, dubins, controller, sim_t, 'dt', dt, 'verbose_level', 1);
