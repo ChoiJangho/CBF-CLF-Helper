@@ -6,7 +6,6 @@ params.l = 9.81;    % [m]        length of pendulum
 params.m = 20;    % [kg]       mass of pendulum
 params.M = 25;    % [kg]       mass of cart
 params.gravity = 9.81;   % [m/s^2]    acceleration of gravity
-params.clf.rate = 0; % not used in this demo.
 
 output_to_regulate = 'theta';
 feedback_gain = [2, 3];

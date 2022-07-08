@@ -14,9 +14,10 @@ function [u, extraout] = ctrl_clf_qp(obj, t, x, varargin)
 %           when qp is infeasible, u is determined from quadprog.)
 %           comp_time: computation time to run the solver.
 % Author: Jason Choi (jason.choi@berkeley.edu)
-    if obj.n_clf == 0
-        error('CLF is not set up so ctrlClfQp cannot be used.');
+    if obj.n_clf_active == 0
+        error('No active CLF constraint');
     end
+    n_clf = obj.n_clf_active;
     
     kwargs = parse_function_args(varargin{:});
     
@@ -72,10 +73,10 @@ function [u, extraout] = ctrl_clf_qp(obj, t, x, varargin)
         verbose = kwargs.verbose;
     end
     if ~isfield(kwargs, 'weight_slack')
-        weight_slack = obj.weight_slack * ones(obj.n_clf);
+        weight_slack = obj.weight_slack * ones(n_clf);
     else
-        if numel(kwargs.weight_slack) ~= obj.n_clf
-            error("wrong weight_slack size. it should be a vector of length obj.n_clf.");
+        if numel(kwargs.weight_slack) ~= n_clf
+            error("wrong weight_slack size. it should be a vector of length obj.n_clf_active.");
         end
         weight_slack = kwargs.weight_slack;        
     end
@@ -92,7 +93,7 @@ function [u, extraout] = ctrl_clf_qp(obj, t, x, varargin)
 
     %% Constraints : A[u; slack] <= b
     A = LgVs;
-    b = -LfVs - obj.clf_rate * Vs;
+    b = -LfVs - obj.clf_rate(obj.clf_active_mask) .* Vs;
     if ~isempty(obj.u_max)
         A = [A; eye(obj.udim)];
         b = [b; obj.u_max];
@@ -102,12 +103,12 @@ function [u, extraout] = ctrl_clf_qp(obj, t, x, varargin)
         b = [b; -obj.u_min];
     end
     if with_slack
-        A_slack = -eye(obj.n_clf);
+        A_slack = -eye(n_clf);
         if ~isempty(obj.u_max)
-            A_slack = [A_slack; zeros(obj.udim, obj.n_clf)];
+            A_slack = [A_slack; zeros(obj.udim, n_clf)];
         end
         if ~isempty(obj.u_min)
-            A_slack = [A_slack; zeros(obj.udim, obj.n_clf)];
+            A_slack = [A_slack; zeros(obj.udim, n_clf)];
         end
         A = [A, A_slack];
     end
@@ -120,9 +121,9 @@ function [u, extraout] = ctrl_clf_qp(obj, t, x, varargin)
     
     if with_slack         
         % cost = 0.5 [u' slack] H [u; slack] + f [u; slack]
-        H = [obj.weight_input, zeros(obj.udim, obj.n_clf);
-            zeros(obj.n_clf, obj.udim), diag(weight_slack)];
-        f_ = [-obj.weight_input * u_ref_; zeros(obj.n_clf, 1)];
+        H = [obj.weight_input, zeros(obj.udim, n_clf);
+            zeros(n_clf, obj.udim), diag(weight_slack)];
+        f_ = [-obj.weight_input * u_ref_; zeros(n_clf, 1)];
         [u_slack, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2            
             feas = 0;
@@ -132,12 +133,12 @@ function [u, extraout] = ctrl_clf_qp(obj, t, x, varargin)
             u = zeros(obj.udim, 1);
             % Making up best-effort heuristic solution, if single clf
             % constraint.
-            if obj.n_clf == 1
+            if n_clf == 1
                 for i = 1:obj.udim
                     u(i) = obj.u_min(i) * (LgVs(i) > 0) + obj.u_max(i) * (LgVs(i) <= 0);
                 end
             end
-            slack = zeros(obj.n_clf, 1);
+            slack = zeros(n_clf, 1);
         else
             feas = 1;
             u = u_slack(1:obj.udim);

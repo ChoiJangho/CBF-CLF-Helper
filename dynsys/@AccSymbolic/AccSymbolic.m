@@ -4,9 +4,9 @@
 
 classdef AccSymbolic < CtrlAffineSys    
     methods        
-        function obj = AccSymbolic(params)
+        function obj = AccSymbolic(params, varargin)
             % Always using symbolic option for setup.
-            obj = obj@CtrlAffineSys(params, 'symbolic');            
+            obj = obj@CtrlAffineSys(params, 'symbolic', varargin{:});
         end
         function Fr = getFr(obj, t, x)
             v = x(2);

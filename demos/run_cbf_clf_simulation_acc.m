@@ -30,7 +30,6 @@ params.u_min  = -params.cd * params.m * params.g;
 params.clf.rate = 5;
 params.cbf.rate = 5;
 
-
 params.weight.input = 2/params.m^2;
 params.weight.slack = 2e-2;
 
@@ -39,7 +38,7 @@ params.udim = 1;
 
 %% Either option works.
 acc_sys = AccSymbolic(params);
-% acc_sys = AccBuiltIn(params);
+acc_sys.set_constraints_mask("clf_active", 1);
 
 [xs, us, ts, extraout] = rollout_controller( ...
     x0, acc_sys, @acc_sys.ctrl_cbf_clf_qp, sim_t, 'verbose_level', 1);

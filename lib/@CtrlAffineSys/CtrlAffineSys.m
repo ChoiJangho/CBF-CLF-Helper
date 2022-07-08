@@ -20,9 +20,15 @@ classdef CtrlAffineSys < handle
         dims_angle % binary indicator of the angle variables. Used to clip it to (-pi, pi]
         n_clf % Number of clf in use
         n_cbf % Number of cbf in use
+        clf_active_mask
+        cbf_active_mask
+        n_clf_active
+        n_cbf_active
+        clf_slack_mask
+        cbf_slack_mask
+        
         
         %% weights used in the built-in controllers
-
         weight_input % weight on control input
         weight_slack % weight on slack variable
         
@@ -33,10 +39,17 @@ classdef CtrlAffineSys < handle
         % (when they exist) is not recommended.
         % (Always preferred to refer directly to the class properties.)
         params
-               
+        
+        %% Function handles for builtin-class
+        clf_builtin
+        cbf_builtin
+        lf_clf_builtin
+        lg_clf_builtin
+        lf_cbf_builtin
+        lg_cbf_builtin
+        
         %% Functions generated from symbolic expressions.
         % (Used when setup_option is 'symbolic'.)
-
         f_sym % :math:`f` function generated from symbolic expression
         g_sym % :math:`g` function generated from symbolic expression
         cbf_sym % CBF function generated from symbolic expression
@@ -48,7 +61,7 @@ classdef CtrlAffineSys < handle
     end
     
     methods
-        function obj = CtrlAffineSys(params, setup_option, clone_to_built_in)
+        function obj = CtrlAffineSys(params, setup_option, init_constraints, clone_to_built_in)
         % | Define a dynamical system through the ``CtrlAffineSys`` constructor
         % | ``dynsys = CtrlAffineSys(params)``
         % 
@@ -82,6 +95,9 @@ classdef CtrlAffineSys < handle
                 setup_option = 'symbolic';
             end
             if nargin < 3
+                init_constraints = true;
+            end
+            if nargin < 4
                 clone_to_built_in = false;
             end
             if strcmp(setup_option, 'built-in') && clone_to_built_in
@@ -97,7 +113,7 @@ classdef CtrlAffineSys < handle
                 setup_option = 'built-in';
             end
             obj.setup_option = setup_option;
-            obj.init_sys(params);
+            obj.init_sys(params, init_constraints); % initialize non-constraint params
         end
         
         function [x, f, g] = defineSystem(obj, params)
@@ -175,15 +191,20 @@ classdef CtrlAffineSys < handle
         % user-defined implementation of the Control Lyapunov Function V(x).
         % x can be multiple elements (size: (xdim, n_element))
         % Vs:  (size: (obj.n_clf, n_element))
+            if isempty(obj.n_clf) || obj.n_clf == 0
+                error("CLFs are undefined or not initialized (use init_constraints).");
+            end
             if strcmp(obj.setup_option, 'built-in')
-                error("For 'built-in' setup_option, obj.clf(x) should be overriden by user.");                
+                Vs = obj.clf_builtin(x);
+            else
+                n_states = size(x, 2);
+                Vs = zeros(obj.n_clf, n_states);
+                for i = 1:obj.n_clf
+                    clf_i = obj.clf_sym{i}(x);
+                    Vs(i, :) = clf_i;
+                end
             end
-            n_states = size(x, 2);
-            Vs = zeros(obj.n_clf, n_states);
-            for i = 1:obj.n_clf
-                clf_i = obj.clf_sym{i}(x);
-                Vs(i, :) = clf_i;
-            end
+            Vs = Vs(obj.clf_active_mask, :);            
         end
         
         function LfVs = lf_clf(obj, x)
@@ -192,15 +213,21 @@ classdef CtrlAffineSys < handle
         % user-defined implementation of the lie derivative of the CLF L_f{V(x)}.
         % x can be multiple elements (size: (xdim, n_element))
         % LfVs:  (size: (obj.n_clf, n_element))
+            if isempty(obj.n_clf) || obj.n_clf == 0
+                error("CLFs are undefined or not initialized (use init_constraints).");
+            end
             if strcmp(obj.setup_option, 'built-in')
-                error("For 'built-in' setup_option, obj.lf_clf(x) should be overriden by user.");
+                LfVs = obj.lf_clf_builtin(x);
+                %error("For 'built-in' setup_option, obj.lf_clf(x) should be overriden by user.");
+            else
+                n_states = size(x, 2);
+                LfVs = zeros(obj.n_clf, n_states);
+                for i = 1:obj.n_clf               
+                    lf_clf_i = obj.lf_clf_sym{i}(x);
+                    LfVs(i, :) = lf_clf_i;
+                end
             end
-            n_states = size(x, 2);
-            LfVs = zeros(obj.n_clf, n_states);
-            for i = 1:obj.n_clf               
-                lf_clf_i = obj.lf_clf_sym{i}(x);
-                LfVs(i, :) = lf_clf_i;
-            end
+            LfVs = LfVs(obj.clf_active_mask, :);
         end
         
         function LgVs = lg_clf(obj, x)
@@ -209,15 +236,20 @@ classdef CtrlAffineSys < handle
         % user-defined implementation of the lie derivative of the CLF L_g{V(x)}.
         % x can be multiple elements (size: (xdim, n_element))
         % LgVs:  (size: (obj.n_clf, obj.udim, n_element))        
+            if isempty(obj.n_clf) || obj.n_clf == 0
+                    error("CLFs are undefined or not initialized (use init_constraints).");
+            end
             if strcmp(obj.setup_option, 'built-in')
-                error("For 'built-in' setup_option, obj.lg_clf(x) should be overriden by user.");
+                LgVs = obj.lg_clf_builtin(x);
+            else
+                n_states = size(x, 2);
+                LgVs = zeros(obj.n_clf, obj.udim, n_states);
+                for i = 1:obj.n_clf
+                    lg_clf_i = reshape(obj.lg_clf_sym{i}(x), [], obj.udim)';
+                    LgVs(i, :, :) = lg_clf_i;
+                end
             end
-            n_states = size(x, 2);
-            LgVs = zeros(obj.n_clf, obj.udim, n_states);
-            for i = 1:obj.n_clf
-                lg_clf_i = reshape(obj.lg_clf_sym{i}(x), [], obj.udim)';
-                LgVs(i, :, :) = lg_clf_i;
-            end
+            LgVs = LgVs(obj.clf_active_mask, :, :);
         end
         
         function Vdots = dclf(obj, x, u)
@@ -239,15 +271,20 @@ classdef CtrlAffineSys < handle
         % user-defined implementation of the Control Barrier Function B(x).
         % x can be multiple elements (size: (xdim, n_element))
         % Bs:  (size: (obj.n_cbf, n_element))
+            if isempty(obj.n_cbf) || obj.n_cbf == 0
+                error("CBFs are undefined or not initialized (use init_constraints).");
+            end            
             if strcmp(obj.setup_option, 'built-in')
-                error("For 'built-in' setup_option, obj.cbf(x) should be overriden by user.");                
+                Bs = obj.cbf_builtin(x);
+            else
+                n_states = size(x, 2);
+                Bs = zeros(obj.n_cbf, n_states);
+                for i = 1:obj.n_cbf
+                    cbf_i = obj.cbf_sym{i}(x);
+                    Bs(i, :) = cbf_i;
+                end
             end
-            n_states = size(x, 2);
-            Bs = zeros(obj.n_cbf, n_states);
-            for i = 1:obj.n_cbf
-                cbf_i = obj.cbf_sym{i}(x);
-                Bs(i, :) = cbf_i;
-            end
+            Bs = Bs(obj.cbf_active_mask, :);
         end
         
         function LfBs = lf_cbf(obj, x)
@@ -256,15 +293,20 @@ classdef CtrlAffineSys < handle
         % user-defined implementation of the lie derivative of the CBF L_f{B(x)}.
         % x can be multiple elements (size: (xdim, n_element))
         % LfBs: (size: (obj.n_cbf, n_element))
+            if isempty(obj.n_cbf) || obj.n_cbf == 0
+                error("CBFs are undefined or not initialized (use init_constraints).");
+            end            
             if strcmp(obj.setup_option, 'built-in')
-                error("For 'built-in' setup_option, obj.lf_cbf(x) should be overriden by user.");
+                LfBs = obj.lf_cbf_builtin(x);
+            else
+                n_states = size(x, 2);
+                LfBs = zeros(obj.n_cbf, n_states);
+                for i = 1:obj.n_cbf               
+                    lf_cbf_i = obj.lf_cbf_sym{i}(x);
+                    LfBs(i, :) = lf_cbf_i;
+                end
             end
-            n_states = size(x, 2);
-            LfBs = zeros(obj.n_cbf, n_states);
-            for i = 1:obj.n_cbf               
-                lf_cbf_i = obj.lf_cbf_sym{i}(x);
-                LfBs(i, :) = lf_cbf_i;
-            end
+            LfBs = LfBs(obj.cbf_active_mask, :);
         end
         
         function LgBs = lg_cbf(obj, x)
@@ -273,15 +315,20 @@ classdef CtrlAffineSys < handle
         % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
         % x can be multiple elements (size: (xdim, n_element))
         % LgBs: (size: (obj.n_cbf, obj.udim, n_element))
+            if isempty(obj.n_cbf) || obj.n_cbf == 0
+                error("CBFs are undefined or not initialized (use init_constraints).");
+            end            
             if strcmp(obj.setup_option, 'built-in')
-                error("For 'built-in' setup_option, obj.lg_cbf(x) should be overriden by user.");
+                LgBs = obj.lg_cbf_builtin(x);
+            else
+                n_states = size(x, 2);
+                LgBs = zeros(obj.n_cbf, obj.udim, n_states);
+                for i = 1:obj.n_cbf
+                    lg_cbf_i = reshape(obj.lg_cbf_sym{i}(x), [], obj.udim)';
+                    LgBs(i, :, :) = lg_cbf_i;
+                end
             end
-            n_states = size(x, 2);
-            LgBs = zeros(obj.n_cbf, obj.udim, n_states);
-            for i = 1:obj.n_cbf
-                lg_cbf_i = reshape(obj.lg_cbf_sym{i}(x), [], obj.udim)';
-                LgBs(i, :, :) = lg_cbf_i;
-            end
+            LgBs = LgBs(obj.cbf_active_mask, :, :);
         end
         
         function Bdots = dcbf(obj, x, u)

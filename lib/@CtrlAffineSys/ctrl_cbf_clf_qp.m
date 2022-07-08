@@ -15,12 +15,14 @@ function [u, extraout] = ctrl_cbf_clf_qp(obj, t, x, varargin)
 %           when qp is infeasible, u is determined from quadprog.)
 %           comp_time: computation time to run the solver.
 % Author: Jason Choi (jason.choi@berkeley.edu)
-    if obj.n_clf == 0
-        error('CLF is not set up so ctrlCbfClfQp cannot be used.');
+    if obj.n_clf_active == 0
+        error('No active CLF constraint');
     end
-    if obj.n_cbf == 0
-        error('CBF is not set up so ctrlCbfClfQp cannot be used.');
+    n_clf = obj.n_clf_active;
+    if obj.n_cbf_active == 0
+        error('No active CBF constraint.');
     end
+    n_cbf = obj.n_cbf_active;
         
     kwargs = parse_function_args(varargin{:});
     
@@ -92,8 +94,8 @@ function [u, extraout] = ctrl_cbf_clf_qp(obj, t, x, varargin)
     %% Constraints: A[u; slack] <= b
     % CLF and CBF constraints.
     A = [LgVs; -LgBs];
-    b = [-LfVs - obj.clf_rate * Vs;
-        LfBs + obj.cbf_rate * Bs]; 
+    b = [-LfVs - obj.clf_rate(obj.clf_active_mask) .* Vs;
+        LfBs + obj.cbf_rate(obj.cbf_active_mask) .* Bs]; 
     % Input constraints
     if ~isempty(obj.u_max)
         A = [A; eye(obj.udim)];
@@ -107,12 +109,12 @@ function [u, extraout] = ctrl_cbf_clf_qp(obj, t, x, varargin)
         % n_slack(size of slack):
         %   = n_clf if n_cbf=1 (Relaxing only the CLF constraints)
         %   = (n_clf + n_cbf) if n_cbf >1 (Relaxing all constraints)
-        if obj.n_cbf == 1
-            n_slack = obj.n_clf;
-            A_slack = [-eye(obj.n_clf); zeros(1, obj.n_clf)];
+        if n_cbf == 1
+            n_slack = n_clf;
+            A_slack = [-eye(n_clf); zeros(1, n_clf)];
         else
-            n_slack = obj.n_clf + obj.n_cbf;
-            A_slack = -eye(obj.n_clf + obj.n_cbf);
+            n_slack = n_clf + n_cbf;
+            A_slack = -eye(n_clf + n_cbf);
         end
         if ~isempty(obj.u_max)
             A_slack = [A_slack; zeros(obj.udim, n_slack)];
