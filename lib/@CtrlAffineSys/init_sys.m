@@ -1,6 +1,10 @@
 function init_sys(obj, params)
+%% Functions that initilaize dynamic system
+% Built in
+    % implant the params' parameter to object's parameters
+    % ex) x_dim, u_dim, n_clf, n_cbf, clf_rate, cbf_rate ...
     obj.params = params;
-
+        
     if strcmp(obj.setup_option, 'symbolic')
         disp(['Setting up the dynamics, CLFs, CBFs from defined symbolic expressions.', ...
             '(This might take time.)']);
@@ -16,11 +20,14 @@ function init_sys(obj, params)
         if ~isa(g_, 'sym')
             g_ = sym(g_);
         end
-        clf_ = obj.defineClf(params, x);
-        cbf_ = obj.defineCbf(params, x);
         % Setting state and input dimension.
         obj.xdim = size(x, 1);
+        obj.sdim = obj.xdim; % support past version, expedient
         obj.udim = size(g_, 2);
+        
+        clf_ = obj.defineClf(params, x);
+        cbf_ = obj.defineCbf(params, x);
+        
         obj.f_sym = matlabFunction(f_, 'vars', {x});
         obj.g_sym = matlabFunction(g_, 'vars', {x});
         
@@ -86,10 +93,13 @@ function init_sys(obj, params)
         end
         
     elseif strcmp(obj.setup_option, 'built-in')
+        % extract param information and inject to object's property
+        % xdim, udim, n_clf, n_cbf 
         if ~isfield(params, 'xdim')
             error("xdim should be specified for built-in setup.");
         end
         obj.xdim = params.xdim;
+        obj.sdim = obj.xdim; % support past version, expedient
         if ~isfield(params, 'udim')
             error("udim should be specified for built-in setup.");
         end
@@ -97,14 +107,16 @@ function init_sys(obj, params)
         x_test = zeros(obj.xdim, 1);
         n_clf = 1;
         try
-            obj.clf(x_test);
+            clf_test = obj.clf(x_test);
+            n_clf = length(clf_test);
         catch e
             n_clf = 0;
         end
         obj.n_clf = n_clf;
         n_cbf = 1;
         try
-            obj.cbf(x_test);
+            cbf_test = obj.cbf(x_test);
+            n_cbf = length(cbf_test);
         catch e
             n_cbf = 0;
         end
@@ -114,8 +126,8 @@ function init_sys(obj, params)
     end
     
     %% Parse parameters for both setup_option.
+    % set cbf rate, clf rate
     if isfield(params, 'clf') && isfield(params.clf, 'rate')
-        %% TODO: change this to params.clf_rate
         obj.clf_rate = params.clf.rate;
     elseif isfield(params, 'clf_rate')
         obj.clf_rate = params.clf_rate;
@@ -124,7 +136,6 @@ function init_sys(obj, params)
             "in order to use CLF.");
     end
     if isfield(params, 'cbf') && isfield(params.cbf, 'rate')
-        %% TODO: change this to params.cbf_rate            
         obj.cbf_rate = params.cbf.rate;
     elseif isfield(params, 'cbf_rate')
         obj.cbf_rate = params.cbf_rate;
@@ -135,7 +146,7 @@ function init_sys(obj, params)
     if isfield(params, 'u_min')
         if length(params.u_min) == 1
             obj.u_min = params.u_min * ones(obj.udim, 1);
-        elseif length(params.u_min) ~= obj.umin
+        elseif length(params.u_min) ~= obj.udim
             error("Invalid size of params.u_min.");
         else
             if isrow(params.u_min)
@@ -148,7 +159,7 @@ function init_sys(obj, params)
     if isfield(params, 'u_max')
         if length(params.u_max) == 1
             obj.u_max = params.u_max * ones(obj.udim, 1);
-        elseif length(params.u_max) ~= obj.umax
+        elseif length(params.u_max) ~= obj.udim
             error("Invalid size of params.u_max.");
         else
             if isrow(params.u_max)
@@ -157,6 +168,73 @@ function init_sys(obj, params)
                 obj.u_max = params.u_max;
             end
         end
+    end
+    %% Parse weight parameters.
+    % obj.weight_input is saved as (udim x udim) matrix.
+    if isfield(params, 'weight')
+        if isfield(params.weight, 'input')
+            weight_input = params.weight.input;
+            if length(weight_input) == 1
+                obj.weight_input = weight_input * eye(obj.udim);
+            elseif isrow(weight_input) && length(weight_input) == obj.udim
+                obj.weight_input = diag(weight_input);
+            elseif iscolumn(params.weight.input)
+                obj.weight_input = diag(weight_input);
+            elseif all(size(obj.params.weight.input) == obj.udim)
+                obj.weight_input = weight_input;
+            else
+                error("params.weight.input should be either a scalar value%s", ...
+                    "(udim) vector that contains the diagonal elements of ", ...
+                    "the weight matrix, or the (udim, udim) full matrix.")
+            end
+        end
+    end
+    if isfield(params, 'weight_input')
+        weight_input = params.weight_input;
+        if length(weight_input) == 1
+            obj.weight_input = weight_input * eye(obj.udim);
+        elseif isrow(weight_input) && length(weight_input) == obj.udim
+            obj.weight_input = diag(weight_input);
+        elseif iscolumn(params.weight.input)
+            obj.weight_input = diag(weight_input);
+        elseif all(size(obj.params.weight.input) == obj.udim)
+            obj.weight_input = weight_input;
+        else
+            error("params.weight_input should be either a scalar value%s", ...
+                "(udim) vector that contains the diagonal elements of ", ...
+                "the weight matrix, or the (udim, udim) full matrix.")
+        end
+    end
+    if isempty(obj.weight_input)
+        obj.weight_input = eye(obj.udim);
+    end
+    % obj.weight_slack is saved as a scalar value.
+    if isfield(params, 'weight')
+        if isfield(params.weight, 'slack')
+            weight_slack = params.weight.slack;
+            if length(weight_slack) == 1
+                obj.weight_slack = weight_slack;
+            else
+                error("Default slack weight should be a scalar value. %s", ...
+                    "If you want to specify different slack weights for ", ...
+                    "each constraint, pass it to the controllers as ", ...
+                    "additional argument 'weight_slack'");
+            end
+        end
+    end    
+    if isfield(params, 'weight_slack')
+        weight_slack = params.weight_slack;
+        if length(weight_slack) == 1
+            obj.weight_slack = weight_slack;
+        else
+            error("Default slack weight should be a scalar value. %s", ...
+                "If you want to specify different slack weights for ", ...
+                "each constraint, pass it to the controllers as ", ...
+                "additional argument 'weight_slack'");
+        end
+    end
+    if isempty(obj.weight_slack)
+        error("Either params.weight.slack or params.weight_slack should be provided.");
     end
     
     %% Do sanity check if all necessary functions are set up properly.

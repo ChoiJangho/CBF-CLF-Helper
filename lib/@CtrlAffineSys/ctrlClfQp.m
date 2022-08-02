@@ -1,33 +1,50 @@
-%% Author: Jason Choi (jason.choi@berkeley.edu)
-function [u, slack, Vs, feas, comp_time] = ctrlClfQp(obj, x, u_ref, with_slack, verbose)
-    %% Implementation of vanilla CLF-QP
-    % Inputs:   x: state
-    %           u_ref: reference control input
-    %           with_slack: flag for relaxing (1: relax, 0: hard CLF constraint)
-    %           verbose: flag for logging (1: print log, 0: run silently)
-    % Outputs:  u: control input as a solution of the CLF-QP
-    %           slack: slack variable for relaxation. (empty list when with_slack=0)
-    %           V: Value of the CLF at the current state.
-    %           feas: 1 if QP is feasible, 0 if infeasible. (Note: even
-    %           when qp is infeasible, u is determined from quadprog.)
-    %           comp_time: computation time to run the solver.
-
+function [u, extraout] = ctrlClfQp(obj, x, varargin)
+%% [u, extraout] = ctrlClfQp(obj, x, varagin)
+%% Implementation of the vanilla CLF-QP
+% Inputs:   x: state
+%   varargin:
+%           u_ref: reference control input
+%           with_slack: flag for relaxing (1: relax, 0: hard CLF constraint)
+%           verbose: flag for logging (1: print log, 0: run silently)
+% Outputs:  u: control input as a solution of the CLF-QP
+%   extraout:
+%           slack: slack variable for relaxation. (empty when with_slack=0)
+%           Vs: CLF values at the current state.
+%           feas: 1 if QP is feasible, 0 if infeasible. (Note: even
+%           when qp is infeasible, u is determined from quadprog.)
+%           comp_time: computation time to run the solver.
+% Author: Jason Choi (jason.choi@berkeley.edu)
     if obj.n_clf == 0
         error('CLF is not set up so ctrlClfQp cannot be used.');
     end
-
-    if nargin < 3 || isempty(u_ref)
+    
+    kwargs = parse_function_args(varargin{:});
+    if ~isfield(kwargs, 'u_ref')
         % If u_ref is given, CLF-QP minimizes the norm of u-u_ref        
         % Default reference control input is u.
         u_ref = zeros(obj.udim, 1);
+    else
+        u_ref = kwargs.u_ref;
     end
-    if nargin < 4
+    if ~isfield(kwargs, 'with_slack')
         % Relaxing is activated in default condition.
         with_slack = 1;
+    else
+        with_slack = kwargs.with_slack;
     end
-    if nargin < 5
+    if ~isfield(kwargs, 'verbose')
         % Run QP without log in default condition.
         verbose = 0;
+    else
+        verbose = kwargs.verbose;
+    end
+    if ~isfield(kwargs, 'weight_slack')
+        weight_slack = obj.weight_slack * ones(obj.n_clf);
+    else
+        if numel(kwargs.weight_slack) ~= obj.n_clf
+            error("wrong weight_slack size. it should be a vector of length obj.n_clf.");
+        end
+        weight_slack = kwargs.weight_slack;        
     end
     
     if size(u_ref, 1) ~= obj.udim
@@ -62,19 +79,6 @@ function [u, slack, Vs, feas, comp_time] = ctrlClfQp(obj, x, u_ref, with_slack, 
         A = [A, A_slack];
     end
     
-    %% Cost
-    if isfield(obj.params.weight, 'input')
-        if size(obj.params.weight.input, 1) == 1 
-            weight_input = obj.params.weight.input * eye(obj.udim);
-        elseif all(size(obj.params.weight.input) == obj.udim)
-            weight_input = obj.params.weight.input;
-        else
-            error("params.weight.input should be either a scalar value or an (udim, udim) array.")
-        end
-    else
-        weight_input = eye(obj.udim);
-    end
-    
     if verbose
         options =  optimoptions('quadprog', 'ConstraintTolerance', 1e-6, 'StepTolerance', 1e-12, 'Display','iter');
     else
@@ -83,17 +87,22 @@ function [u, slack, Vs, feas, comp_time] = ctrlClfQp(obj, x, u_ref, with_slack, 
     
     if with_slack         
         % cost = 0.5 [u' slack] H [u; slack] + f [u; slack]
-        H = [weight_input, zeros(obj.udim, obj.n_clf);
-            zeros(obj.n_clf, obj.udim), diag(obj.params.weight.slack)];
-        f_ = [-weight_input * u_ref; zeros(obj.n_clf, 1)];
+        H = [obj.weight_input, zeros(obj.udim, obj.n_clf);
+            zeros(obj.n_clf, obj.udim), diag(weight_slack)];
+        f_ = [-obj.weight_input * u_ref; zeros(obj.n_clf, 1)];
         [u_slack, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2            
             feas = 0;
-            disp("Infeasible QP. Numerical error might have occured.");
-            % Making up best-effort heuristic solution.            
+            if verbose
+                disp("Infeasible QP. Numerical error might have occured.");
+            end
             u = zeros(obj.udim, 1);
-            for i = 1:obj.udim
-                u(i) = obj.u_min(i) * (LgVs(i) > 0) + obj.u_max(i) * (LgVs(i) <= 0);
+            % Making up best-effort heuristic solution, if single clf
+            % constraint.
+            if obj.n_clf == 1
+                for i = 1:obj.udim
+                    u(i) = obj.u_min(i) * (LgVs(i) > 0) + obj.u_max(i) * (LgVs(i) <= 0);
+                end
             end
             slack = zeros(obj.n_clf, 1);
         else
@@ -102,12 +111,14 @@ function [u, slack, Vs, feas, comp_time] = ctrlClfQp(obj, x, u_ref, with_slack, 
             slack = u_slack(obj.udim+1:end);
         end
     else
-        H = weight_input;
-        f_ = -weight_input * u_ref;
+        H = obj.weight_input;
+        f_ = -obj.weight_input * u_ref;
         [u, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2
             feas = 0;
-            disp("Infeasible QP. CLF constraint is conflicting with input constraints.");
+            if verbose
+                disp("Infeasible QP. CLF constraint is conflicting with input constraints.");
+            end
             % Making up best-effort heuristic solution.
             u = zeros(obj.udim, 1);
             for i = 1:obj.udim
@@ -119,4 +130,9 @@ function [u, slack, Vs, feas, comp_time] = ctrlClfQp(obj, x, u_ref, with_slack, 
         slack = [];
     end
     comp_time = toc(tstart);
+    
+    extraout.slack = slack;
+    extraout.Vs = Vs;
+    extraout.feas = feas;
+    extraout.comp_time = comp_time;
 end

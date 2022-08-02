@@ -1,7 +1,7 @@
 %% Example for multiple CBF constraints.
 clear all;
 close all;
-dt = 0.02;
+dt = 0.0005a;
 sim_t = 20;
 x0 = [0;5;0];
 
@@ -15,92 +15,60 @@ params.yo = [4, 4];
 % Obstacle radius
 params.d = [2, 2];
 
-% params.xo = 5;
-% params.yo = 4;
-% params.d = 2;
-
 params.cbf_gamma0 = 1;
 % Desired target point
 params.xd = 12;
 params.yd = 0;
 
 params.clf.rate = 0.5;
-% params.weight.slack = 1;
-% params.weight.slack = [1, 100, 100];
-params.weight.slack = [100, 100];
+params.weight_slack = 1;
 
 params.cbf.rate = 50;
 
 dubins = DubinsCar(params);
 
-odeFun = @dubins.dynamics;
-% controller = @dubins.ctrlCbfClfQp;
-controller = @dubins.ctrlCbfQp;
-odeSolver = @ode45;
+weight_slack_for_cbfs = 100 * ones(size(params.d));
 
-total_k = ceil(sim_t / dt);
-x = x0;
-t = 0;   
-% initialize traces.
-xs = zeros(total_k, dubins.xdim);
-ts = zeros(total_k, 1);
-us = zeros(total_k-1, 1);
-Vs = zeros(total_k-1, 1);
-hs = zeros(total_k-1, length(params.xo));
-xs(1, :) = x0';
-ts(1) = t;
-for k = 1:total_k-1
-%     t
-    % Determine control input.
-    % dV_hat: analytic Vdot based on model.
-    [u, slack, hs_k, V] = controller(x);        
-    us(k, :) = u';
-    hs(k, :) = hs_k;
-    Vs(k) = V;
+controller = @(x, varargin) dubins.ctrlCbfClfQp(x, ...
+    'weight_slack', [params.weight_slack, weight_slack_for_cbfs], varargin{:});
 
-    % Run one time step propagation.
-    [ts_temp, xs_temp] = odeSolver(@(t, s) odeFun(t, s, u), [t t+dt], x);
-    x = xs_temp(end, :)';
+[xs, us, ts, extraout] = rollout_controller( ...
+    x0, dubins, dubins, controller, sim_t, 'dt', dt);
+Bs = extraout.Bs;
+plot_results(ts, xs, us, Bs, [params.xo;params.yo], params.d)
 
-    xs(k+1, :) = x';
-    ts(k+1) = ts_temp(end);
-    t = t + dt;
-end
-
-plot_results(ts, xs, us, hs, [params.xo;params.yo], params.d)
-
-function plot_results(t, xs, us, hs, p_o, r_o)
+function plot_results(t, xs, us, Bs, p_o, r_o)
 
 figure
 subplot(3,1,1)
-plot(t, xs(:,1))
+plot(t, xs(1, :))
 xlabel('t')
 ylabel('x [m]')
 
 subplot(3,1,2)
-plot(t, xs(:,2))
+plot(t, xs(2, :))
 xlabel('t')
 ylabel('y [m]')
 
 subplot(3,1,3)
-plot(t, xs(:,3))
+plot(t, xs(3, :))
 xlabel('t')
 ylabel('theta [rad]')
 
 
 figure
-plot(t(1:end-1), us)
+plot(t, us)
 xlabel('t')
 ylabel('u [rad/s]')
 
 
-lim_min = min(min(xs(:, 1)), min(xs(:, 2)));
-lim_max = max(max(xs(:, 1)), max(xs(:, 2)));
+lim_min = min(min(xs(1, :)), min(xs(2, :)));
+lim_max = max(max(xs(1, :)), max(xs(2, :)));
 lim_min = min([lim_min, p_o(1)-r_o, p_o(2)-r_o]);
 lim_max = max([lim_max, p_o(1)+r_o, p_o(2)+r_o]);
 
 figure
-plot(xs(:, 1), xs(:, 2)); hold on;
+plot(xs(1, :), xs(2, :)); hold on;
 for i = 1:size(p_o, 2)
     draw_circle(p_o(:, i), r_o(i));
 end
@@ -111,11 +79,11 @@ ylabel('y [m]')
 axis equal
 
 figure
-for i = 1:size(hs, 2)
-    subplot(size(hs, 2), 1, i)
-    plot(t(1:end-1), hs(:, i))
+for i = 1:size(Bs, 1)
+    subplot(size(Bs, 1), 1, i)
+    plot(t, Bs(i, :))
     xlabel('t')
-    ylabel('cbf h(s)');
+    ylabel('cbf B(s)');
 end
 end
 

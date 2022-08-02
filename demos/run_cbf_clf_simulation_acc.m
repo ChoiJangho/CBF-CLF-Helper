@@ -1,5 +1,5 @@
 clear all; 
-close all;
+% close all;
 
 dt = 0.02;
 sim_t = 15;
@@ -34,48 +34,18 @@ params.xdim = 3;
 params.udim = 1;
 
 %% Either option works.
-accSys = AccSymbolic(params);
-% accSys = AccBuiltIn(params);
+% acc_sys = AccSymbolic(params);
+acc_sys = AccBuiltIn(params);
 
-odeFun = @accSys.dynamics;
-controller = @accSys.ctrlCbfClfQp;
-odeSolver = @ode45;
-
-total_k = ceil(sim_t / dt);
-x = x0;
-t = 0;   
-% initialize traces.
-xs = zeros(total_k, 3);
-ts = zeros(total_k, 1);
-us = zeros(total_k-1, 1);
-slacks = zeros(total_k-1, 1);
-hs = zeros(total_k-1, 1);
-Vs = zeros(total_k-1, 1);
-xs(1, :) = x0';
-ts(1) = t;
-for k = 1:total_k-1
-    t
-    Fr = accSys.getFr(x);
-    % Determine control input.
-    [u, slack, h, V] = controller(x, Fr);        
-    us(k, :) = u';
-    slacks(k, :) = slack;
-    hs(k) = h;
-    Vs(k) = V;
-
-    % Run one time step propagation.
-    [ts_temp, xs_temp] = odeSolver(@(t, s) odeFun(t, s, u), [t t+dt], x);
-    x = xs_temp(end, :)';
-
-    xs(k+1, :) = x';
-    ts(k+1) = ts_temp(end);
-    t = t + dt;
-end
-
-plot_results(ts, xs, us, slacks, hs, Vs, params)
+[xs, us, ts, extraout] = rollout_controller( ...
+    x0, acc_sys, acc_sys, @acc_sys.ctrlCbfClfQp, sim_t, 'verbose_level', 1);
+Vs = extraout.Vs;
+Bs = extraout.Bs;
+slacks = extraout.slacks;
+plot_results(ts, xs, us, slacks, Bs, Vs, params);
 
 
-function plot_results(ts, xs, us, slacks, hs, Vs, params)
+function plot_results(ts, xs, us, slacks, Bs, Vs, params)
     fig_sz = [10 15]; 
     plot_pos = [0 0 10 15];
     yellow = [0.998, 0.875, 0.529];
@@ -87,7 +57,7 @@ function plot_results(ts, xs, us, slacks, hs, Vs, params)
     
     figure;
     subplot(6,1,1);
-    p = plot(ts, xs(:, 2));
+    p = plot(ts, xs(2, :));
     p.Color = blue;
     p.LineWidth = 1.5;
     hold on;
@@ -99,7 +69,7 @@ function plot_results(ts, xs, us, slacks, hs, Vs, params)
     
 
     subplot(6,1,2);
-    p = plot(ts, xs(:, 3));
+    p = plot(ts, xs(3, :));
     p.Color = magenta;
     p.LineWidth = 1.5;
     ylabel("z (m)");
@@ -108,18 +78,18 @@ function plot_results(ts, xs, us, slacks, hs, Vs, params)
     grid on;    
     
     subplot(6,1,3);
-    p = plot(ts(1:end-1), us); hold on;
+    p = plot(ts, us); hold on;
     p.Color = orange;
     p.LineWidth = 1.5;
-    plot(ts(1:end-1), params.u_max*ones(size(ts, 1)-1, 1), 'k--');
-    plot(ts(1:end-1), params.u_min*ones(size(ts, 1)-1, 1), 'k--');
+    plot(ts, params.u_max*ones(length(ts), 1), 'k--');
+    plot(ts, params.u_min*ones(length(ts), 1), 'k--');
     ylabel("u(N)");
     title("Control Input - Wheel Force");    
     set(gca, 'FontSize', 14);
     grid on;    
 
     subplot(6,1,4);
-    p = plot(ts(1:end-1), slacks); hold on;
+    p = plot(ts, slacks); hold on;
     p.Color = magenta;
     p.LineWidth = 1.5;
     ylabel("slack");
@@ -129,17 +99,17 @@ function plot_results(ts, xs, us, slacks, hs, Vs, params)
 
     
     subplot(6,1,5);
-    p = plot(ts(1:end-1), hs);
+    p = plot(ts, Bs);
     p.Color = navy;
     p.LineWidth = 1.5;
-    ylabel("CBF (h(x))");
+    ylabel("CBF (B(x))");
     title("CBF");    
     set(gca, 'FontSize', 14);
         grid on;    
 
     subplot(6,1,6);
     set(gca, 'FontSize', 14);
-    p = plot(ts(1:end-1), Vs);
+    p = plot(ts, Vs);
     p.Color = navy;
     p.LineWidth = 1.5;
     xlabel("t(s)");
