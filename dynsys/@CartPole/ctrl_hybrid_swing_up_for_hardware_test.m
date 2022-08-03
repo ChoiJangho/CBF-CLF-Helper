@@ -32,8 +32,13 @@ function [u, extraout] = ctrl_hybrid_swing_up_for_hardware_test(obj, t, x, varar
        extraout.E = obj.pole_energy(x);
        extraout.swing_up = 1;
        extraout.Vs = obj.clf(x);       
-    elseif t < 0.6
-        u = (obj.m + obj.M) * 5 * (t - 0.2) / 0.4
+    elseif t < 0.45
+        u = (obj.m + obj.M) * 3.5;
+       extraout.E = obj.pole_energy(x);
+       extraout.swing_up = 1;
+       extraout.Vs = obj.clf(x);       
+    elseif t < 0.7
+        u = (obj.m + obj.M) * 7 * (t - 0.2) / 0.5;
        if ~init_direction_right
            u = -u;
        end
