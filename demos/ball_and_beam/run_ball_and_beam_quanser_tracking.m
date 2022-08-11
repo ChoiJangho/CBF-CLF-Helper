@@ -19,18 +19,16 @@ feedback_gain = [k_p, k_d, k_a, k_j];
 
 dynsys = BallBeamQuanser(feedback_gain);
 
-
 virtual_input_controller = @(t, x, varargin) dynsys.ctrlSisoTracking( ...
     t, x, @(t) get_reference_trajectory(t, amplitude, period, 'sine'), varargin{:});
 
 fl_controller = @(t, x, varargin) dynsys.ctrlFeedbackLinearize( ...
     t, x, virtual_input_controller, varargin{:});
-pd_controller = @(x, varargin) dynsys.ctrlPD(x, varargin{:});
 
 x0 = [-0.19; 0; 0; 0];
 
 t_sim = 20;
-[xs, us, ts, extraout] = rollout_time_varying_controller(x0, dynsys, dynsys, fl_controller, ...
+[xs, us, ts, extraout] = rollout_controller(x0, dynsys, fl_controller, ...
     t_sim, 'end_event_function', @(t, x) dynsys.ball_out_of_range(t, x));
 xis = cell2mat(extraout.xi);
 xi_ds = cell2mat(extraout.xi_d);

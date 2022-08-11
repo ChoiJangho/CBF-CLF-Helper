@@ -18,41 +18,31 @@ params.u_max = (params.m + params. M) * 10;
 params.clf.rate = 0.5;
 params.weight_slack = 1e10;
 % Create the dynamic system to simulate.
-model_sys = CartPole(params);
+dynsys_force = CartPole(params);
 
-params = get_predefined_params_set_for_vanilla_cart_pole('QUANSER', '2WEIGHTS');
 % Set up input saturation limit.
 params.u_max = (params.m + params. M) * 10;
-% Set up CLF-related parameters
+% Set up CLF, CBF-related parameters
 params.clf.rate = 0.5;
 params.weight_slack = 1e10;
 params.k_cbf = 10;
 params.x_lim = 0.35;
 params.cbf.rate = 10;
+% Set up new input bound for the Quanser dynsys.
 params.u_max = 6;
 params.u_min = -6;
 dynsys = QuanserCartPole(params, '2WEIGHTS');
 
-
-%% Choice of controllers
-%% zero control input in voltage.
-% controller = @(x, varargin) dynsys.ctrl_zero([], x, varargin{:});
-%% zero control input in cart force.
-% controller = @(x, varargin) dynsys.ctrl_zero_force([], x, varargin{:});
-
-%% Choice of high-level controller
-% controller_for_force = @(x, varargin) model_sys.ctrlClfSontag(x, varargin{:});
-controller_for_force = @(x, varargin) model_sys.ctrl_hybrid_swing_up( ...
-  [], x, 'k_energy', 10, varargin{:});
-
+controller_for_force = @(t, x, varargin) dynsys_force.ctrl_hybrid_swing_up( ...
+  t, x, 'k_energy', 10, varargin{:});
 if ~use_cbf_filter
     %% Low-level controller maps desired force to input voltage.
-    controller = @(x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
-        [], x, controller_for_force, varargin{:});
+    controller = @(t, x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
+        t, x, controller_for_force, varargin{:});
 else
-    controller_unfiltered = @(x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
-        [], x, controller_for_force, varargin{:});
-    controller = @(x, varargin) dynsys.ctrlCbfQp(x, ...
+    controller_unfiltered = @(t, x, varargin) dynsys.ctrl_voltage_for_desired_force( ...
+        t, x, controller_for_force, varargin{:});
+    controller = @(t, x, varargin) dynsys.ctrlCbfQp(t, x, ...
         'u_ref', controller_unfiltered, varargin{:});
 end
 
@@ -64,7 +54,7 @@ x0 = [0; pi-0.01; 0; -0.01];
 % x0 = [0; pi/24; 0; 0];
 % x0 = [-0.34; -0.19; -0.5; 2.17];
 
-[xs, us, ts, extraout] = rollout_controller(x0, dynsys, model_sys, controller, T);
+[xs, us, ts, extraout] = rollout_controller(x0, dynsys, controller, T);
 if isfield(extraout, 'swing_up')
     swing_up_flags = cell2mat(extraout.swing_up);
 end
@@ -155,8 +145,7 @@ grid on;
 
 fig = plot_cart_pole_core_results(xs, us, ts, dynsys);
 
-save_figure(fig, 'file_name', 'swing_up_without_cbf_sim', 'file_format', 'pdf', 'figure_size', [12, 18]);
-
+% save_figure(fig, 'file_name', 'swing_up_without_cbf_sim', 'file_format', 'pdf', 'figure_size', [12, 18]);
 % save_figure(fig, 'file_name', 'swing_up_with_cbf_sim', 'file_format', 'pdf', 'figure_size', [12, 18]);
 % fig3 = dynsys.animate_cart_pole(xs, us, ts, 0.01, 'zero');
 

@@ -1,7 +1,10 @@
-%% Example for multiple CBF constraints.
+%% This example demonstrates
+%   - passing additional input arguments when defining the controller
+%   function handle.
+%   - usage of multiple CBF constraints in the CBF-QP/CBF-CLF-QP.
 clear all;
-close all;
-dt = 0.0005a;
+% close all;
+dt = 0.01;
 sim_t = 20;
 x0 = [0;5;0];
 
@@ -9,7 +12,7 @@ params.v = 1; % velocity
 params.u_max = 4; % max yaw rate (left)
 params.u_min = -4; % min yaw rate (right)
 
-% Obstacle position
+% Obstacle position (length is the number of obstacles).
 params.xo = [5, 11];
 params.yo = [4, 4];
 % Obstacle radius
@@ -26,14 +29,18 @@ params.weight_slack = 1;
 params.cbf.rate = 50;
 
 dubins = DubinsCar(params);
+dubins.set_constraints_mask('cbf_active', 1);
 
-weight_slack_for_cbfs = 100 * ones(size(params.d));
+weight_slack_for_cbfs = 100 * ones(dubins.n_cbf_active);
 
-controller = @(x, varargin) dubins.ctrlCbfClfQp(x, ...
-    'weight_slack', [params.weight_slack, weight_slack_for_cbfs], varargin{:});
+% controller = @(t, x, varargin) dubins.ctrl_cbf_clf_qp(t, x, ...
+%     'weight_slack', [params.weight_slack, weight_slack_for_cbfs], varargin{:});
+controller = @(t, x, varargin) dubins.ctrl_cbf_clf_qp(t, x, ...
+    'weight_slack', params.weight_slack, varargin{:});
+
 
 [xs, us, ts, extraout] = rollout_controller( ...
-    x0, dubins, dubins, controller, sim_t, 'dt', dt);
+    x0, dubins, controller, sim_t, 'dt', dt, 'verbose_level', 1);
 Bs = extraout.Bs;
 plot_results(ts, xs, us, Bs, [params.xo;params.yo], params.d)
 

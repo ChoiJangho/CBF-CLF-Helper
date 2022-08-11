@@ -1,4 +1,4 @@
-function [u, extraout] = ctrlPD(obj, x, varargin)
+function [u, extraout] = ctrlPD(obj, t, x, varargin)
 kwargs = parse_function_args(varargin{:});
 if isfield(kwargs, 'k_p')
     k_p = kwargs.k_p;

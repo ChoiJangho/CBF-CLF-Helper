@@ -1,30 +1,30 @@
 function [xs, us, ts, extraout] = rollout_controller( ...
-    x0, plant_sys, control_sys, controller, T, varargin)
-%% [xs, us, ts, extras] = rollout_controller( ...
-%%    x0, plant_sys, control_sys, controller, T, varargin)
-%% [xs, us, ts, extras] = rollout_controller( ...
-%%    x0, plant_sys, control_sys, controller, T, ...
-%%    'field1_name', field1_value, 'field2_name', field2_value)
-% example:
-% [xs, us, ts, extraout] = rollout_controller( ...
-%    x0, t0, plant_sys, control_sys, @control_sys.ctrlClfQp, T);
-% Vs = extraout.Vs;
+    x0, plant_sys, controller, T, varargin)
+% | ``[xs, us, ts, extras] = rollout_controller(x0, plant_sys, controller, T, varargin)``
+% | ``[xs, us, ts, extras] = rollout_controller(x0, plant_sys, controller, T, ...``
+% |   ``'field1_name', field1_value, 'field2_name', field2_value)``
+% Examples:
+%  simulates plant_sys with ctrl_clf_qp controller of the control_sys for
+%  [t0, t0+T] starting at the initial state x0::
+% 
+%    [xs, us, ts, extraout] = rollout_controller(x0, t0, plant_sys, @control_sys.ctrlClfQp, T);
+%    Vs = extraout.Vs;
+% 
 % In this function, the controller always takes 'with_slack', 'verbose' as
 % additional input arguments. Make sure your own controller supports these
 % fields with varargin. If you want to pass other varying input arguments
-% to the controller, follow the below sample code:
-% controller_handle = @(x, varargin) your_custom_controller(x, ...
+% to the controller, follow the below sample code::
+% 
+%  controller_handle = @(t, x, varargin) your_custom_controller(t, x, ...
 %    'field1_name', field1_value, 'field2_name', field2_value, varargin{:});
-% [xs, us, ts, extraout] = rollout_controller( ...
-%    x0, t0, plant_sys, control_sys, controller_handle, T);
-%% simulates plant_sys with ctrlClfQp controller of the control_sys
-%% for [t0, t0+T] starting at the initial state x0.
+%  [xs, us, ts, extraout] = rollout_controller( ...
+%    x0, t0, plant_sys, controller_handle, T);
+% 
 %% INPUTS
 %   x0: initial state
 %   plant_sys: ControlAffineSys instance for the plant simulation.
-%   control_sys: ControlAffineSys instance for the model and the controller.
 %   controller: function handle for controller.
-%       examples: ctrlClfQp, ctrlCbfQp, ctrlCbfClfQp
+%       examples: ctrl_clf_qp, ctrl_cbf_qp, ctrl_cbf_clf_qp
 %   T: simulation time (time horizon)
 %% Supported fields for varargin
 %   SIMULATION OPTIONS:
@@ -35,10 +35,8 @@ function [xs, us, ts, extraout] = rollout_controller( ...
 %   information, please check out matlab ode Events.
 %   ode_func: your own choice of ode_func for simulation. (default: ode45)
 %   CONTROLLER OPTIONS:
-%   with_slack: if 1: relax constraints, 0: hard constraints. (default 1)
-%   u_ref: reference signal of u. It can be a constant vector or a function
-%   handle that takes x as input.
 %   t_tolerance: time tolerance for ending the simulation (default 1e-10)
+%   
 %   DEBUG:
 %   verbose_level: 
 %       0: print no log (default)
@@ -64,87 +62,25 @@ function [xs, us, ts, extraout] = rollout_controller( ...
 %   end_with_event: 1 if the simulation ended with the end_event, else 0.
 settings = parse_function_args(varargin{:});
 
-% Feedback-linearizer Determinant
-if isa(control_sys, 'CtrlAffineSysFL')
-    is_control_sys_FL = true;
-else
-    is_control_sys_FL = false;
-end
-
 if ~isfield(settings, 't0')
     t0 = 0;
 else
     t0 = settings.t0;
 end
 
-% TODO: reverse calculate mu0 from u0
 if ~isfield(settings, 'u0')
     u0 = [];
 else
-    if length(settings.u0) ~= control_sys.udim
-        error("u0 dimension does not match with control_sys.udim.");
+    if length(settings.u0) ~= plant_sys.udim
+        error("u0 dimension does not match with plant_sys.udim.");
     end    
     u0 = settings.u0;
-end
-
-if ~isfield(settings, 'u_ref')
-    u_ref = [];
-else
-    if ~isa(settings.u_ref, 'function_handle') && ...
-            (length(settings.u_ref) ~= control_sys.udim)
-        error("u_ref dimension does not match with control_sys.udim.");        
-    end
-    u_ref = settings.u_ref;
-end
-
-if ~isfield(settings, 'mu0')
-    mu0 = [];
-else
-    if ~is_control_sys_FL
-        error("mu0 is supported only for control_sys of CtrlAffineSysFL");
-    end
-    if length(settings.mu0) ~= control_sys.udim
-        error("mu0 dimension does not match with control_sys.udim.");
-    end    
-    mu0 = settings.mu0;
-end
-
-if ~isfield(settings, 'mu_ref')
-    mu_ref = [];
-else
-    if ~is_control_sys_FL
-        error("mu_ref is supported only for control_sys of CtrlAffineSysFL");
-    end
-    if length(settings.mu_ref) ~= control_sys.udim
-        error("mu_ref dimension does not match with control_sys.udim.");        
-    end
-    mu_ref = settings.mu_ref;
-end
-
-if ~isempty(u0) && ~isempty(mu0)
-    error("Only one of u0 and mu0 should be provided.");
-end
-
-if isempty(u_ref) && isempty(mu_ref)
-    ref_type = 0;
-elseif ~isempty(u_ref) && ~isempty(mu_ref)
-    error("Only one of u_ref and mu_ref should be provided.");
-elseif ~isempty(u_ref)
-    ref_type = 1; % reference signal is u.
-else
-    ref_type = 2; % reference signal is mu.
 end
 
 if ~isfield(settings, 'dt')
     dt = 0.01;
 else
     dt = settings.dt;
-end
-
-if ~isfield(settings, 'with_slack')
-    with_slack = 1;
-else
-    with_slack = settings.with_slack;
 end
 
 if ~isfield(settings, 'verbose_level')
@@ -175,10 +111,6 @@ else
     t_tolerance = settings.t_tolerance;
 end
 
-% Dimension check
-if plant_sys.udim ~= control_sys.udim
-    error("plant_sys.udim and control_sys.udim should match each other.")
-end
 udim = plant_sys.udim;
 if length(x0) ~= plant_sys.xdim
     error("x0 dimension does not match with plant_sys.xdim.");
@@ -207,75 +139,56 @@ extraout = struct;
 % Initialize state & time.
 x = x0;
 t = t0;
-u_prev = zeros(control_sys.udim, 1);
-mu_prev = zeros(control_sys.udim, 1);
+ctrl_prev = zeros(plant_sys.udim, 1);
 
 end_simulation = false;
-MAX_TIME = 20;
 %% Run simulation.
 % _t indicates variables for the current loop.
 tstart = tic;
+
+% Run dummy controller to get necessary arguments in extra outputs and
+% check control input dimension is correct.
+[u_dummy, extra_dummy] = controller(t, x, 'verbose', 0);
+if length(u_dummy) ~= udim
+    error("controller output u size is different from plant_sys.udim");
+end
+
+if isfield(extra_dummy, 'ctrl_prev')
+    pass_ctrl_prev = true;
+else
+    pass_ctrl_prev = false;
+end
+
 while ~end_simulation
-    %% Determine control input.
-    tstart = tic; % DEBUG
+    tstart = tic;
     
+    %% Determine control input.
     if t == t0 && ~isempty(u0)
         u = u0;
-        % Run dummy controller to get extra_t
-        % TODO: this is a bad practice, fix this.
-        
-        [~, extra_t] = controller(x, 'verbose', 0);
-        
-        extra_t.feas = 1;
-        extra_t.comp_time = 0;
-    elseif t == t0 && ~isempty(mu0)
-        mu = mu0;
-        u = control_sys.ctrlFeedbackLinearize(x, mu);
-        % Run dummy controller to get extra_t
-        % TODO: this is a bad practice, fix this.
-        [~, extra_t] = controller(x, 'verbose', 0);
-        extra_t.feas = 1;
-        extra_t.comp_time = 0;
+        extra_t = extra_dummy;
+    elseif pass_ctrl_prev
+        [u, extra_t] = controller(t, x, ...
+            'ctrl_prev', ctrl_prev, 'verbose', (verbose_level>=2));
+        ctrl_prev = extra_t.ctrl_prev;    
     else
-        if ref_type == 0
-            [u, extra_t] = controller(x, ...
-                'with_slack', with_slack, 'verbose', (verbose_level>=2));            
-            
-        elseif ref_type == 1
-            if isa(u_ref, 'function_handle')
-                u_ref_t = u_ref(x, u_prev);
-            else
-                u_ref_t = u_ref;
-            end
-            [u, extra_t] = controller(x, 'u_ref', u_ref_t, ...
-                'with_slack', with_slack, 'verbose', (verbose_level>=2));                        
-        elseif ref_type == 2
-            if isa(mu_ref, 'function_handle')
-                mu_ref_t = mu_ref(x, mu_prev);
-            else
-                mu_ref_t = mu_ref;
-            end            
-            [u, extra_t] = controller(x, 'mu_ref', mu_ref_t, ...
-                'with_slack', with_slack, 'verbose', (verbose_level>=2));                        
-        end
+        [u, extra_t] = controller(t, x, 'verbose', (verbose_level>=2));
     end
+    
     if verbose_level >= 1
         print_log(t, x, u, extra_t);
     end
-    
-    tend = toc(tstart);
-    
+        
     us = [us, u];
     extraout = fetch_other_extras(extraout, extra_t);
     if isfield(extra_t, 'feas')
         feas = [feas, extra_t.feas];
     end
     if ~isfield(extra_t, 'comp_time')
-        comp_times = [comp_times, 0];
+        comp_times = [comp_times, -1];
     else
         comp_times = [comp_times, extra_t.comp_time];        
     end
-    if with_slack && isfield(extra_t, 'slack')        
+    if isfield(extra_t, 'slack')        
         slacks = [slacks, extra_t.slack];
     end
     if isfield(extra_t, 'Vs')
@@ -292,7 +205,6 @@ while ~end_simulation
     end
     if isfield(extra_t, 'mu')
         mus = [mus, extra_t.mu];
-        mu_prev = extra_t.mu;
     end        
     
     %% Run simulation for one time step.
@@ -307,47 +219,26 @@ while ~end_simulation
     else
         [ts_t, xs_t] = ode_func(@(t, x) plant_sys.dynamics(t, x, u), ...
             [t, t_end_t], x);
-        % TODO: When ODE Fails due to divergence, infinite-loop
-        t_ode = toc(tstart);
-        if t_ode > MAX_TIME
-            break
-        end
         end_simulation = abs(ts_t(end) - (t0 + T))<t_tolerance;
         end_with_event = [];
     end            
     t = ts_t(end);
     x = xs_t(end, :)';
     x = plant_sys.clip_state_angles(x);
-    u_prev = u;
     %% Record traces.
     xs = [xs, x];
     ts = [ts, t];
 end % end of the main while loop
 %% Add control input for the final timestep.
-if ref_type == 0
-    [u, extra_t] = controller(x, ...
-        'with_slack', with_slack, 'verbose', (verbose_level>=2));            
-elseif ref_type == 1
-    if isa(u_ref, 'function_handle')
-        u_ref_t = u_ref(x, u_prev);
-    else
-        u_ref_t = u_ref;
-    end
-    [u, extra_t] = controller(x, 'u_ref', u_ref_t, ...
-        'with_slack', with_slack, 'verbose', (verbose_level>=2));                        
-elseif ref_type == 2
-    if isa(mu_ref, 'function_handle')
-        mu_ref_t = mu_ref(x, mu_prev);
-    else
-        mu_ref_t = mu_ref;
-    end            
-    [u, extra_t] = controller(x, 'mu_ref', mu_ref_t, ...
-        'with_slack', with_slack, 'verbose', (verbose_level>=2));                        
+if pass_ctrl_prev
+    [u, extra_t] = controller(t, x, ...
+        'u_prev', ctrl_prev, 'verbose', (verbose_level>=2));
+else        
+    [u, extra_t] = controller(t, x, 'verbose', (verbose_level>=2));
 end
 if verbose_level >= 1
     print_log(t, x, u, extra_t);
 end
-
 
 us = [us, u];
 extraout = fetch_other_extras(extraout, extra_t);
@@ -355,11 +246,11 @@ if isfield(extra_t, 'feas')
     feas = [feas, extra_t.feas];
 end
 if ~isfield(extra_t, 'comp_time')
-    comp_times = [comp_times, 0];
+    comp_times = [comp_times, -1];
 else
     comp_times = [comp_times, extra_t.comp_time];        
 end
-if with_slack && isfield(extra_t, 'slack')
+if isfield(extra_t, 'slack')
     slacks = [slacks, extra_t.slack];
 end
 if isfield(extra_t, 'Vs')
@@ -440,8 +331,12 @@ function print_log(t, x, u, extra_t)
         fprintf("%.2g, ", x);
         fprintf("\t u: ");
         fprintf("%.2g, ", u);
-        fprintf("\t feas: %d", extra_t.feas);
-        fprintf("\t comp_time: %.2f", extra_t.comp_time);
+        if isfield(extra_t, 'feas')
+            fprintf("\t feas: %d", extra_t.feas);
+        end
+        if isfield(extra_t, 'comp_time')
+            fprintf("\t comp_time: %.2f", extra_t.comp_time);
+        end
         % Add custom log here.
         fprintf("\n");
 end

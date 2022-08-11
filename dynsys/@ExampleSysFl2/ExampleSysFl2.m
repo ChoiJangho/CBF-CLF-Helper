@@ -18,7 +18,7 @@ classdef ExampleSysFl2 < CtrlAffineSysFL
             z = [];
         end
         
-        function [u, extraout] = ctrlBackstepping(obj, x, varargin)
+        function [u, extraout] = ctrlBackstepping(obj, t, x, varargin)
             kwargs = parse_function_args(varargin{:});
             if isfield(kwargs, 'c')
                 c = kwargs.c;

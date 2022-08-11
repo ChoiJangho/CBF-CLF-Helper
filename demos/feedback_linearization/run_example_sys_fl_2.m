@@ -6,13 +6,13 @@ dynsys = ExampleSysFl2(feedback_gain);
 
 x0 = [2; 0];
 
-fl_controller = @(x, varargin) dynsys.ctrlFeedbackLinearize( ...
-    x, @dynsys.ctrlSisoLinearFeedback, varargin{:});
-backstepping_controller = @(x, varargin) dynsys.ctrlBackstepping(x, varargin{:});
+fl_controller = @(t, x, varargin) dynsys.ctrlFeedbackLinearize( ...
+   t, x, @dynsys.ctrlSisoLinearFeedback, varargin{:});
+backstepping_controller = @(t, x, varargin) dynsys.ctrlBackstepping(t, x, varargin{:});
 
 t_max = 8;
-[xs_fl, us_fl, ts_fl, extraout] = rollout_controller(x0, dynsys, dynsys, fl_controller, t_max);
-[xs_bs, us_bs, ts_bs, extraout] = rollout_controller(x0, dynsys, dynsys, backstepping_controller, t_max);
+[xs_fl, us_fl, ts_fl, extraout] = rollout_controller(x0, dynsys, fl_controller, t_max);
+[xs_bs, us_bs, ts_bs, extraout] = rollout_controller(x0, dynsys, backstepping_controller, t_max);
 
 x1_test = -2:0.1:2;
 u_fl_test = zeros(size(x1_test));
@@ -20,8 +20,8 @@ u_bs_test = zeros(size(x1_test));
 for i=1:length(x1_test)
     x1 = x1_test(i);
     x0 = [x1; 0];
-    [u_fl_test(i), ~] = fl_controller(x0);
-    [u_bs_test(i), ~] = backstepping_controller(x0);
+    [u_fl_test(i), ~] = fl_controller(ts_fl(i), x0);
+    [u_bs_test(i), ~] = backstepping_controller(ts_bs(i), x0);
 
 end
 

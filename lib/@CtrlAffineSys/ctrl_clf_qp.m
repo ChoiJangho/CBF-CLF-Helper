@@ -1,4 +1,4 @@
-function [u, extraout] = ctrlClfQp(obj, x, varargin)
+function [u, extraout] = ctrl_clf_qp(obj, t, x, varargin)
 %% [u, extraout] = ctrlClfQp(obj, x, varagin)
 %% Implementation of the vanilla CLF-QP
 % Inputs:   x: state
@@ -14,18 +14,52 @@ function [u, extraout] = ctrlClfQp(obj, x, varargin)
 %           when qp is infeasible, u is determined from quadprog.)
 %           comp_time: computation time to run the solver.
 % Author: Jason Choi (jason.choi@berkeley.edu)
-    if obj.n_clf == 0
-        error('CLF is not set up so ctrlClfQp cannot be used.');
+    if obj.n_clf_active == 0
+        error('No active CLF constraint');
     end
+    n_clf = obj.n_clf_active;
     
     kwargs = parse_function_args(varargin{:});
-    if ~isfield(kwargs, 'u_ref')
-        % If u_ref is given, CLF-QP minimizes the norm of u-u_ref        
-        % Default reference control input is u.
-        u_ref = zeros(obj.udim, 1);
+    
+    % QP minimizes the norm of u-u_ref
+    if ~isfield(kwargs, 'u_ref')            
+        % Default reference control input is 0.
+        u_ref_ = zeros(obj.udim, 1);
+        u_ref = u_ref_;
     else
         u_ref = kwargs.u_ref;
+        if isa(u_ref, 'function_handle')
+            [u_ref_, extraout] = u_ref(t, x, varargin{:});
+        elseif isa(u_ref, 'numeric')
+            u_ref_ = u_ref;
+        elseif isa(u_ref, 'char')
+            if ~strcmp(u_ref, 'min_ctrl_diff')
+                error("Currently, u_ref as string option only supports 'min_ctrl_diff'");
+            end
+            % 'ctrl_prev' should be provided as extra argument in order to use 'min_ctrl_diff' option.
+            % otherwise, it assumes that it's the very beginning of the
+            % simulation and use u_prev = zeros(obj.udim, 1);
+            u_prev = zeros(obj.udim, 1);
+            if isfield(kwargs, 'ctrl_prev')
+                u_prev = kwargs.ctrl_prev;
+            end
+            %% determines the portion of |u - u_prev| weight compared to |u|
+            % 1: minimizes |u - u_prev|^2
+            % 0: minimizes |u|^2
+            ratio_ctrl_diff = 1;
+            if isfield(kwargs, 'ratio_ctrl_diff')
+                if ratio_ctrl_diff > 1 || ratio_ctrl_diff < 0
+                    error("ratio_u_diff should be a value between 0 and 1.");
+                end                                
+                ratio_ctrl_diff = kwargs.ratio_ctrl_diff;
+            end
+            u_ref_ = ratio_ctrl_diff * u_prev;
+        else
+            error("Unknown u_ref type.");
+        end
     end
+    extraout.u_ref = u_ref_;
+    
     if ~isfield(kwargs, 'with_slack')
         % Relaxing is activated in default condition.
         with_slack = 1;
@@ -39,15 +73,15 @@ function [u, extraout] = ctrlClfQp(obj, x, varargin)
         verbose = kwargs.verbose;
     end
     if ~isfield(kwargs, 'weight_slack')
-        weight_slack = obj.weight_slack * ones(obj.n_clf);
+        weight_slack = obj.weight_slack * ones(n_clf);
     else
-        if numel(kwargs.weight_slack) ~= obj.n_clf
-            error("wrong weight_slack size. it should be a vector of length obj.n_clf.");
+        if numel(kwargs.weight_slack) ~= n_clf
+            error("wrong weight_slack size. it should be a vector of length obj.n_clf_active.");
         end
         weight_slack = kwargs.weight_slack;        
     end
     
-    if size(u_ref, 1) ~= obj.udim
+    if size(u_ref_, 1) ~= obj.udim
         error("Wrong size of u_ref, it should be (udim, 1) array.");
     end
     
@@ -59,7 +93,7 @@ function [u, extraout] = ctrlClfQp(obj, x, varargin)
 
     %% Constraints : A[u; slack] <= b
     A = LgVs;
-    b = -LfVs - obj.clf_rate * Vs;
+    b = -LfVs - obj.clf_rate(obj.clf_active_mask) .* Vs;
     if ~isempty(obj.u_max)
         A = [A; eye(obj.udim)];
         b = [b; obj.u_max];
@@ -69,12 +103,12 @@ function [u, extraout] = ctrlClfQp(obj, x, varargin)
         b = [b; -obj.u_min];
     end
     if with_slack
-        A_slack = -eye(obj.n_clf);
+        A_slack = -eye(n_clf);
         if ~isempty(obj.u_max)
-            A_slack = [A_slack; zeros(obj.udim, obj.n_clf)];
+            A_slack = [A_slack; zeros(obj.udim, n_clf)];
         end
         if ~isempty(obj.u_min)
-            A_slack = [A_slack; zeros(obj.udim, obj.n_clf)];
+            A_slack = [A_slack; zeros(obj.udim, n_clf)];
         end
         A = [A, A_slack];
     end
@@ -87,9 +121,9 @@ function [u, extraout] = ctrlClfQp(obj, x, varargin)
     
     if with_slack         
         % cost = 0.5 [u' slack] H [u; slack] + f [u; slack]
-        H = [obj.weight_input, zeros(obj.udim, obj.n_clf);
-            zeros(obj.n_clf, obj.udim), diag(weight_slack)];
-        f_ = [-obj.weight_input * u_ref; zeros(obj.n_clf, 1)];
+        H = [obj.weight_input, zeros(obj.udim, n_clf);
+            zeros(n_clf, obj.udim), diag(weight_slack)];
+        f_ = [-obj.weight_input * u_ref_; zeros(n_clf, 1)];
         [u_slack, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2            
             feas = 0;
@@ -99,12 +133,12 @@ function [u, extraout] = ctrlClfQp(obj, x, varargin)
             u = zeros(obj.udim, 1);
             % Making up best-effort heuristic solution, if single clf
             % constraint.
-            if obj.n_clf == 1
+            if n_clf == 1
                 for i = 1:obj.udim
                     u(i) = obj.u_min(i) * (LgVs(i) > 0) + obj.u_max(i) * (LgVs(i) <= 0);
                 end
             end
-            slack = zeros(obj.n_clf, 1);
+            slack = zeros(n_clf, 1);
         else
             feas = 1;
             u = u_slack(1:obj.udim);
@@ -112,7 +146,7 @@ function [u, extraout] = ctrlClfQp(obj, x, varargin)
         end
     else
         H = obj.weight_input;
-        f_ = -obj.weight_input * u_ref;
+        f_ = -obj.weight_input * u_ref_;
         [u, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2
             feas = 0;
@@ -135,4 +169,7 @@ function [u, extraout] = ctrlClfQp(obj, x, varargin)
     extraout.Vs = Vs;
     extraout.feas = feas;
     extraout.comp_time = comp_time;
+    if isa(u_ref, 'char') && strcmp(u_ref, 'min_ctrl_diff')
+        extraout.ctrl_prev = u;
+    end
 end

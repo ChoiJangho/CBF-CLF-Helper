@@ -5,10 +5,10 @@ dynsys = ExampleSysFl1(feedback_gain);
 
 x0 = [1; 1; 1];
 
-simple_fl_controller = @(x, varargin) dynsys.ctrlFeedbackLinearize( ...
-    x, @dynsys.ctrlSisoLinearFeedback, varargin{:});
+simple_fl_controller = @(t, x, varargin) dynsys.ctrlFeedbackLinearize( ...
+    t, x, @dynsys.ctrlSisoLinearFeedback, varargin{:});
 
-[xs, us, ts, extraout] = rollout_controller(x0, dynsys, dynsys, simple_fl_controller, 5);
+[xs, us, ts, extraout] = rollout_controller(x0, dynsys, simple_fl_controller, 5);
 zs = cell2mat(extraout.z);
 
 open_figure('font_size', 16);

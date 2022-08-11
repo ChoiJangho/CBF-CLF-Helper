@@ -1,4 +1,4 @@
-function [u, extraout] = ctrlClfSontag(obj, x, varargin)
+function [u, extraout] = ctrl_clf_sontag(obj, t, x, varargin)
 %% [u, extraout] = ctrlClfSontag(obj, x, varagin)
 %% Implementation of the vanilla CLF-QP
 % Inputs:   x: state

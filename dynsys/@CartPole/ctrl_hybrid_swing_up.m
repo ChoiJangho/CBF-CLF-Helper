@@ -18,8 +18,7 @@ function [u, extraout] = ctrl_hybrid_swing_up(obj, t, x, varargin)
     
     theta = x(2);
     if abs(clip_angle(theta)) < epsilon_switch
-       [u, extraout] = obj.ctrlClfSontag(x);
-       % [u, extraout] = obj.ctrlClfQp(x);
+       [u, extraout] = obj.ctrlClfSontag(t, x);
        % append dummy values
        extraout.E = obj.pole_energy(x);
        extraout.swing_up = 0;       

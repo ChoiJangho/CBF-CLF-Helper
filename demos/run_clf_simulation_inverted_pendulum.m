@@ -1,3 +1,7 @@
+%% This example demonstrates
+% - the default usage of the CtrlAffineSys, both in 'symbolic' and 'built-in' options.
+% - the default usage of the built-in controllers, e.g. CBF-CLF-QP.
+
 clear all; close all;
 
 dt = 0.02;
@@ -26,7 +30,7 @@ x0 = [0.76; 0.05];
 ip_sys = InvertedPendulum(params);
 
 [xs, us, ts, extraout] = rollout_controller( ...
-    x0, ip_sys, ip_sys, @ip_sys.ctrlClfQp, sim_t, 'verbose_level', 1);
+    x0, ip_sys, @ip_sys.ctrl_clf_qp, sim_t, 'verbose_level', 1);
 
 figure;
 title('Inverted Pendulum: CLF-QP States');
