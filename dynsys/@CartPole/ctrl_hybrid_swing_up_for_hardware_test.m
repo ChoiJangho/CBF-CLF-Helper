@@ -46,7 +46,7 @@ function [u, extraout] = ctrl_hybrid_swing_up_for_hardware_test(obj, t, x, varar
        extraout.swing_up = 1;
        extraout.Vs = obj.clf(x);       
     elseif abs(clip_angle(theta)) < epsilon_switch
-       [u, extraout] = obj.ctrlClfSontag(x);
+       [u, extraout] = obj.ctrlClfSontag(t, x);
        % [u, extraout] = obj.ctrlClfQp(x);
        % append dummy values
        extraout.E = obj.pole_energy(x);
