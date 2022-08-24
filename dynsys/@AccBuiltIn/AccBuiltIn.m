@@ -8,13 +8,13 @@ classdef AccBuiltIn < CtrlAffineSys
             % Always using built-in option for setup.
             obj = obj@CtrlAffineSys(params, 'built-in', varargin{:});            
         end
-        function Fr = getFr(obj, x)
+        function Fr = getFr(obj, t, x)
             v = x(2, :);
             Fr = obj.params.f0 + obj.params.f1 * v + obj.params.f2 * v.^2;
         end
         function f_ = f(obj, x)
             v = x(2, :);
-            Fr = getFr(obj, x);
+            Fr = obj.getFr([], x);
             f_ = [v; -Fr/obj.params.m; obj.params.v0-v];
         end
         function g_ = g(obj, x)
@@ -26,7 +26,7 @@ classdef AccBuiltIn < CtrlAffineSys
         end
         function LfV = lf_clf_all(obj, x)
             v = x(2, :);
-            Fr = getFr(obj, x);
+            Fr = obj.getFr([], x);
             LfV = - 2 * Fr .* (v - obj.params.vd) / obj.params.m;
         end
         function LgV = lg_clf_all(obj, x)
@@ -49,7 +49,7 @@ classdef AccBuiltIn < CtrlAffineSys
             v0 = obj.params.v0;
             g = obj.params.g;
             m = obj.params.m;
-            Fr = getFr(obj, x);
+            Fr = obj.getFr([], x);
             LfB = (T + (v - v0) / (cd * g)) .* Fr / m + (v0 - v);            
         end
         function LgB = lg_cbf_all(obj, x)
