@@ -346,23 +346,23 @@ classdef CtrlAffineSys < handle
         
         %% Supporting C-style signatures
         function [u, extraout] = ctrlCbfQp(obj, t, x, varargin)
-            [u, extraout] = ctrl_cbf_qp(obj, t, x, varargin{:});
+            [u, extraout] = obj.ctrl_cbf_qp(t, x, varargin{:});
         end
         
         function [u, extraout] = ctrlClfQp(obj, t, x, varargin)
-            [u, extraout] = ctrl_clf_qp(obj, t, x, varargin{:});
+            [u, extraout] = obj.ctrl_clf_qp(t, x, varargin{:});
         end
         
         function [u, extraout] = ctrlCbfClfQp(obj, t, x, varargin)
-            [u, extraout] = ctrl_cbf_clf_qp(obj, t, x, varargin{:});
+            [u, extraout] = obj.ctrl_cbf_clf_qp(t, x, varargin{:});
         end
         
         function [u, extraout] = ctrlZero(obj, t, x, varargin)
-            [u, extraout] = ctrl_zero(obj, t, x, varargin{:});
+            [u, extraout] = obj.ctrl_zero(t, x, varargin{:});
         end
         
         function [u, extraout] = ctrlClfSontag(obj, t, x, varargin)
-            [u, extraout] = ctrl_clf_sontag(obj, t, x, varargin{:});
+            [u, extraout] = obj.ctrl_clf_sontag(t, x, varargin{:});
         end
 
         function u = clipInput(obj, u)
