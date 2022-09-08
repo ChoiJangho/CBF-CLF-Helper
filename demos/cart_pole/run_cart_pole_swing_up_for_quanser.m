@@ -19,6 +19,7 @@ params.clf.rate = 0.5;
 params.weight_slack = 1e10;
 % Create the dynamic system to simulate.
 dynsys_force = CartPole(params);
+dynsys_force.init_constraints(dynsys_force.params);
 
 % Set up input saturation limit.
 params.u_max = (params.m + params. M) * 10;
@@ -32,6 +33,7 @@ params.cbf.rate = 10;
 params.u_max = 6;
 params.u_min = -6;
 dynsys = QuanserCartPole(params, '2WEIGHTS');
+dynsys.init_constraints(dynsys.params);
 
 controller_for_force = @(t, x, varargin) dynsys_force.ctrl_hybrid_swing_up( ...
   t, x, 'k_energy', 10, varargin{:});

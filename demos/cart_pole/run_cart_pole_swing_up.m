@@ -17,6 +17,7 @@ params.clf.rate = 0.5;
 params.weight_slack = 1e10;
 % Create the dynamic system to simulate.
 dynsys = CartPole(params);
+dynsys.init_constraints(dynsys.params);
 
 %% Choice of controllers
 %% zero control input
