@@ -367,6 +367,29 @@ classdef CtrlAffineSys < handle
 
         function u = clipInput(obj, u)
             u = clip_input(obj, u);
+        end        
+    end
+    
+    methods(Static)
+        function extraout = append_u_ref(extraout, u_ref)
+            if isfield(extraout, 'u_ref')
+                extraout.u_ref = [extraout.u_ref, u_ref];
+            else
+                extraout.u_ref = u_ref;
+            end            
+        end
+        
+        function varargin_cell = remove_latest_u_ref(varargin_cell)
+            for i = 1:2:length(varargin_cell)-1
+                if strcmp(varargin_cell(end-i), 'u_ref')
+                    if i == 1
+                        varargin_cell = varargin_cell(1:end-i-1);
+                        return;
+                    end
+                    varargin_cell = varargin_cell([1:end-i-1,end-i+2:end]);
+                    return;
+                end
+            end
         end
     end
 end

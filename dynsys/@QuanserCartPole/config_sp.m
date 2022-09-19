@@ -1,4 +1,4 @@
-%% These methods are provided by Quanser.
+    %% These methods are provided by Quanser.
 function [ Mp, Lp, lp, Jp, Bp ] = config_sp(PEND_TYPE)
     % from Inch to Meter
     K_IN2M = 0.0254;

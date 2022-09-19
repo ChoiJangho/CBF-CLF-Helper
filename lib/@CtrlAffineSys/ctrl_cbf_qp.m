@@ -29,9 +29,12 @@ function [u, extraout] = ctrl_cbf_qp(obj, t, x, varargin)
     else
         u_ref = kwargs.u_ref;
         if isa(u_ref, 'function_handle')
+            varargin = obj.remove_latest_u_ref(varargin);
             [u_ref_, extraout] = u_ref(t, x, varargin{:});
+            extraout = obj.append_u_ref(extraout, u_ref_);
         elseif isa(u_ref, 'numeric')
             u_ref_ = u_ref;
+            extraout.u_ref = u_ref_;
         elseif isa(u_ref, 'char')
             if ~strcmp(u_ref, 'min_ctrl_diff')
                 error("Currently, u_ref as string option only supports 'min_ctrl_diff'");
@@ -54,11 +57,11 @@ function [u, extraout] = ctrl_cbf_qp(obj, t, x, varargin)
                 ratio_ctrl_diff = kwargs.ratio_ctrl_diff;
             end
             u_ref_ = ratio_ctrl_diff * u_prev;
+            extraout.u_ref = u_ref_;            
         else
             error("Unknown u_ref type.");
         end
     end
-    extraout.u_ref = u_ref_;
     
     if ~isfield(kwargs, 'with_slack')
         % Relaxing is activated in default condition.

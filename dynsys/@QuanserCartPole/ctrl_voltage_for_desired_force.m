@@ -7,11 +7,10 @@ function [u, extraout] = ctrl_voltage_for_desired_force(obj, t, x, f_desired, va
 if isa(f_desired, 'function_handle')
     [f_desired_, extraout] = f_desired(t, x, varargin{:});
 elseif isa(f_desired, 'numeric')
-    f_desired_ = u_ref;
+    f_desired_ = f_desired;
     extraout = [];
 end
 u_raw = (f_desired_ + obj.constant_motor_drag * x(3)) / obj.constant_V2F;
 extraout.f_desired = f_desired_;
 u = obj.clipInput(u_raw);
-extraout.u_raw = u_raw;
 end
