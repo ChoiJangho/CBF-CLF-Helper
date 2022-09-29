@@ -76,7 +76,7 @@ function [u, extraout] = ctrl_cbf_qp(obj, t, x, varargin)
         verbose = kwargs.verbose;
     end
     if ~isfield(kwargs, 'weight_slack')
-        weight_slack = obj.weight_slack * ones(n_cbf);
+        weight_slack = obj.weight_slack * ones(n_cbf, 1);
     else
         if numel(kwargs.weight_slack) ~= n_cbf
             error("wrong weight_slack size. it should be a vector of length obj.n_cbf_active.");
@@ -140,7 +140,7 @@ function [u, extraout] = ctrl_cbf_qp(obj, t, x, varargin)
                     u(i) = obj.u_min(i) * (LgBs(i) <= 0) + obj.u_max(i) * (LgBs(i) > 0);
                 end
             end
-            slack = zeros(obj.n_clf, 1);
+            slack = zeros(obj.n_cbf, 1);
         else
             feas = 1;
             u = u_slack(1:obj.udim);
