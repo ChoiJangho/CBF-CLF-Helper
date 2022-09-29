@@ -140,6 +140,7 @@ function [u, extraout] = ctrl_cbf_qp(obj, t, x, varargin)
                     u(i) = obj.u_min(i) * (LgBs(i) <= 0) + obj.u_max(i) * (LgBs(i) > 0);
                 end
             end
+            % Todo: match slack with the constraint violation.
             slack = zeros(obj.n_cbf, 1);
         else
             feas = 1;
@@ -155,6 +156,14 @@ function [u, extraout] = ctrl_cbf_qp(obj, t, x, varargin)
             feas = 0;
             if verbose
                 disp("Infeasible QP. CBF constraint is conflicting with input constraints.");
+            end
+            u = zeros(obj.udim, 1);
+            % Making up best-effort heuristic solution, if single cbf
+            % constraint.
+            if n_cbf == 1
+                for i = 1:obj.udim
+                    u(i) = obj.u_min(i) * (LgBs(i) <= 0) + obj.u_max(i) * (LgBs(i) > 0);
+                end
             end
         else
             feas = 1;
