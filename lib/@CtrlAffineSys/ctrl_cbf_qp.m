@@ -5,6 +5,11 @@ function [u, extraout] = ctrl_cbf_qp(obj, t, x, varargin)
 %   varargin:
 %           u_ref: reference control input
 %           verbose: flag for logging (1: print log, 0: run silently)
+%           with_slack: CBF constraint becomes soft constraint if 1, with slack variables as additional decision
+%           variables. (default: true)
+%           LgB_tolerance: Regarding LgB whose absolute value smaller than LgB_tolearance as numerical error. (default:
+%           1e-6);
+%           active_input_bound: apply u_max and u_min input bound if true, no input bount if false. (default: true)
 % Outputs:  u: control input as a solution of the CBF-CLF-QP
 %   extraout:
 %           slack: slack variable for relaxation. (empty when with_slack=0)
@@ -83,33 +88,58 @@ function [u, extraout] = ctrl_cbf_qp(obj, t, x, varargin)
         end
         weight_slack = kwargs.weight_slack;
     end
+    if ~isfield(kwargs, 'LgB_tolerance')
+        LgB_tolerance = 1e-6;
+    else
+        LgB_tolerance = kwargs.LgB_tolerance;
+    end
+    
     if size(u_ref_, 1) ~= obj.udim
         error("Wrong size of u_ref, it should be (udim, 1) array.");
-    end                
+    end
+    
+    if ~isfield(kwargs, 'active_input_bound')
+        active_input_bound = true;
+    else
+        active_input_bound = kwargs.active_input_bound;
+    end
+       
             
     tstart = tic;
     Bs = obj.cbf(x);
     LfBs = obj.lf_cbf(x);
     LgBs = obj.lg_cbf(x);
-        
+    if active_input_bound
+        u_max = obj.u_max(t, x);
+    else
+        u_max = [];
+    end
+
+    if active_input_bound
+        u_min = obj.u_min(t, x);
+    else
+        u_min = [];
+    end
+
+    
     %% Constraints : A * u <= b
     % CBF constraint.
     A = -LgBs;
     b = LfBs + obj.cbf_rate(obj.cbf_active_mask) .* Bs;
-    if ~isempty(obj.u_max)
+    if ~isempty(u_max)
         A = [A; eye(obj.udim)];
-        b = [b; obj.u_max];
+        b = [b; u_max];
     end
-    if ~isempty(obj.u_min)
+    if ~isempty(u_min)
         A = [A; -eye(obj.udim)];
-        b = [b; -obj.u_min];
+        b = [b; -u_min];
     end
     if with_slack
         A_slack = -eye(n_cbf);
-        if ~isempty(obj.u_max)
+        if ~isempty(u_max)
             A_slack = [A_slack; zeros(obj.udim, n_cbf)];
         end
-        if ~isempty(obj.u_min)
+        if ~isempty(u_min)
             A_slack = [A_slack; zeros(obj.udim, n_cbf)];
         end
         A = [A, A_slack];
@@ -131,17 +161,15 @@ function [u, extraout] = ctrl_cbf_qp(obj, t, x, varargin)
             feas = 0;
             if verbose
                 disp("Infeasible QP. Numerical error might have occured.");
-            end
+            end            
             u = zeros(obj.udim, 1);
-            % Making up best-effort heuristic solution, if single cbf
-            % constraint.
-            if n_cbf == 1
+            % Making up best-effort heuristic solution, if single cbf constraint and there exist input bounds.            
+            if n_cbf == 1 && ~isempty(u_max) && ~isempty(u_min)
                 for i = 1:obj.udim
-                    u(i) = obj.u_min(i) * (LgBs(i) <= 0) + obj.u_max(i) * (LgBs(i) > 0);
+                    u(i) = u_min(i) * (LgBs(i) <= -LgB_tolerance) + u_max(i) * (LgBs(i) > LgB_tolerance);
                 end
             end
-            % Todo: match slack with the constraint violation.
-            slack = zeros(obj.n_cbf, 1);
+            slack = -LgBs * u - (LfBs + obj.cbf_rate(obj.cbf_active_mask) .* Bs);
         else
             feas = 1;
             u = u_slack(1:obj.udim);
@@ -158,11 +186,10 @@ function [u, extraout] = ctrl_cbf_qp(obj, t, x, varargin)
                 disp("Infeasible QP. CBF constraint is conflicting with input constraints.");
             end
             u = zeros(obj.udim, 1);
-            % Making up best-effort heuristic solution, if single cbf
-            % constraint.
-            if n_cbf == 1
+            % Making up best-effort heuristic solution, if single cbf constraint and there exist input bounds.            
+            if n_cbf == 1 && ~isempty(u_max) && ~isempty(u_min)
                 for i = 1:obj.udim
-                    u(i) = obj.u_min(i) * (LgBs(i) <= 0) + obj.u_max(i) * (LgBs(i) > 0);
+                    u(i) = u_min(i) * (LgBs(i) <= -LgB_tolerance) + u_max(i) * (LgBs(i) > LgB_tolerance);
                 end
             end
         else

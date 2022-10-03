@@ -12,9 +12,10 @@ classdef CtrlAffineSys < handle
         clf_rate % rate used in the clf constraint.
         cbf_rate % rate used in the cbf constraint.
 
-        u_max % max bound of control input.
-        u_min % min bound of control input.
-                
+        % If the input bounds are constant, this value is initialized from params.
+        u_max_constant = []  % max bound of control input.
+        u_min_constant = [] % min bound of control input.
+                        
         xdim % State dimension
         udim % Control input dimension
         dims_angle % binary indicator of the angle variables. Used to clip it to (-pi, pi]
@@ -58,6 +59,10 @@ classdef CtrlAffineSys < handle
         clf_sym % CLF function generated from symbolic expression
         lf_clf_sym % :math:`L_f V(x)` function generated from symbolic expression
         lg_clf_sym % :math:`L_g V(x)` function generated from symbolic expression
+        lf_cbf_sym_str
+        lg_cbf_sym_str
+        lf_clf_sym_str
+        lg_clf_sym_str
     end
     
     methods
@@ -367,6 +372,16 @@ classdef CtrlAffineSys < handle
 
         function u = clipInput(obj, u)
             u = clip_input(obj, u);
+        end
+        
+        % Function handle that sets the input constraint.
+        % If user wants, time or state-varying input bounds, override these functions.
+        function u = u_max(obj, t, x)
+            u = obj.u_max_constant;
+        end
+        
+        function u = u_min(obj, t, x)
+            u = obj.u_min_constant;            
         end        
     end
     

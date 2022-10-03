@@ -73,27 +73,27 @@ function init_sys(obj, params, init_constraints)
     %% Parse parameters for both setup_option.    
     if isfield(params, 'u_min')
         if length(params.u_min) == 1
-            obj.u_min = params.u_min * ones(obj.udim, 1);
+            obj.u_min_constant = params.u_min * ones(obj.udim, 1);
         elseif length(params.u_min) ~= obj.udim
             error("Invalid size of params.u_min.");
         else
             if isrow(params.u_min)
-                obj.u_min = params.u_min';
+                obj.u_min_constant = params.u_min';
             else
-                obj.u_min = params.u_min;
+                obj.u_min_constant = params.u_min;
             end
         end
     end
     if isfield(params, 'u_max')
         if length(params.u_max) == 1
-            obj.u_max = params.u_max * ones(obj.udim, 1);
+            obj.u_max_constant = params.u_max * ones(obj.udim, 1);
         elseif length(params.u_max) ~= obj.udim
             error("Invalid size of params.u_max.");
         else
             if isrow(params.u_max)
-                obj.u_max = params.u_max';
+                obj.u_max_constant = params.u_max';
             else
-                obj.u_max = params.u_max;
+                obj.u_max_constant = params.u_max;
             end
         end
     end
