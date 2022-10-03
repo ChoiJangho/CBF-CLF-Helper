@@ -10,14 +10,18 @@ max_acc = 1;
 max_yaw_rate = 0.5;
 u_max = [max_yaw_rate; max_acc];
 
+%% Controller setting to test.
+params.state_dependent_input_bound = false;
+params.apply_cbf_smooth_margin = true;
+active_input_bound = true;
+with_slack = 0; % activate slack explicitly if 1.
+
 %% % Control parameters
 params.u_max = u_max;
 params.u_min = -u_max;
 params.weight.slack = 1000000;
 params.v_target = 5;
 params.v_max = 10;
-params.max_acc = max_acc;
-
 %% CBF
 params.xo = 0;
 params.yo = 0;
@@ -26,8 +30,6 @@ params.gamma_l = 5;
 params.cbf.rate = 1;
 
 dynsys = Car4D(params);
-% Additional options for the controller.
-with_slack = 1; % activate slack explicitly.
 % Define the function handle with additional input arguments that specify the controller settings.
 
 % The reference controller is a target tracking controller. The target
@@ -37,7 +39,7 @@ ref_controller = @(t, x, varargin) dynsys.ctrl_pursue_target(t, x, 'target', ...
 
 % controller = ref_controller;
 controller = @(t, x, varargin) dynsys.ctrl_cbf_qp(t, x, ...
-   'with_slack', with_slack, 'u_ref', ref_controller, varargin{:});
+   'with_slack', with_slack, 'u_ref', ref_controller, 'active_input_bound', active_input_bound, varargin{:});
 
 
 verbose_level = 1;
@@ -48,9 +50,9 @@ verbose_level = 1;
 % x0 = [-5;0;0.0;1];
 % x0 = [-1;-2;0.0;1];
 x0 = [4;0;0.0;1];
-
+% x0 = [1.8673; 0.7147; 
 % simulation time
-sim_t = 40;
+sim_t = 20;
 [xs, us, ts, extraout] = rollout_controller(x0, dynsys, controller, ...
     sim_t, 'dt', dt, 'verbose_level', verbose_level);
 
