@@ -109,6 +109,7 @@ function [u, extraout] = ctrl_cbf_qp(obj, t, x, varargin)
     Bs = obj.cbf(x);
     LfBs = obj.lf_cbf(x);
     LgBs = obj.lg_cbf(x);
+    LgBs(abs(LgBs) < LgB_tolerance) = 0;
     if active_input_bound
         u_max = obj.u_max(t, x);
     else
