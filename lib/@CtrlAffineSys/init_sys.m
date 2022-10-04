@@ -41,8 +41,29 @@ function init_sys(obj, params, init_constraints)
         obj.xdim = size(x, 1);
         obj.udim = size(g_, 2);
         
-        obj.f_sym = matlabFunction(f_, 'vars', {x});
-        obj.g_sym = matlabFunction(g_, 'vars', {x});
+        obj.f_sym = cell(obj.xdim, 1);        
+        for i = 1:obj.xdim
+            if isSymType(f_(i), 'constant')
+                f_i = double(f_(i));                
+                obj.f_sym{i} = @(x) f_i * ones(1, size(x, 2));
+            else
+                obj.f_sym{i} = matlabFunction(f_(i), 'vars', {x});
+            end
+        end
+        % obj.f_sym = matlabFunction(f_, 'vars', {x});
+%         obj.g_sym = matlabFunction(g_, 'vars', {x});
+        obj.g_sym = cell(obj.xdim, obj.udim);        
+        for i = 1:obj.xdim
+            for j = 1:obj.udim
+                if isSymType(g_(i, j), 'constant')
+                    g_ij = double(g_(i, j));
+                    obj.g_sym{i, j} = @(x) g_ij * ones(1, size(x, 2));
+                else
+                    obj.g_sym{i, j} = matlabFunction(g_(i, j), 'vars', {x});
+                end
+            end
+        end        
+        
         if generate_clone
             f_file_str = fullfile(clone_class_path, 'f');
             matlabFunction(f_, 'file', f_file_str, 'vars', {obj_, x});

@@ -175,7 +175,11 @@ classdef CtrlAffineSys < handle
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, f(x) should be overriden by user.");                
             end
-            f_ = obj.f_sym(x);            
+            f_ = zeros(size(x));
+            for i = 1:obj.xdim
+                f_(i, :) = obj.f_sym{i}(x);
+            end            
+%             f_ = obj.f_sym(x);            
         end
         
         function g_ = g(obj, x)
@@ -187,7 +191,12 @@ classdef CtrlAffineSys < handle
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.g(x) should be overriden by user.");                
             end
-            g_ = obj.g_sym(x);
+            g_ = zeros(size(x, 1), obj.udim, size(x, 2));
+            for i = 1:obj.xdim
+                for j = 1:obj.udim
+                    g_(i, j, :) = obj.g_sym{i, j}(x);
+                end
+            end
         end
         
         function Vs = clf(obj, x)
