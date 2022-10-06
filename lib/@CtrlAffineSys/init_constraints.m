@@ -222,8 +222,7 @@ function init_cbf_constraints_symbolic(obj, x, f_, g_, cbf_)
         lg_cbf_i = dcbf_i * g_;        
         lf_cbf_sym{i_cbf} = matlabFunction(lf_cbf_i, 'vars', {x});
         if all(isAlways(simplify(lg_cbf_i) == 0, 'Unknown', 'false'))
-            error('Relative degree of the defined %d-th CBF > 1. %s', ...
-            [i_cbf, 'Currently, High-order relative degree is not supported.']);
+            fprintf('Warning: Relative degree of the defined %d-th CBF > 1. Currently, High-order relative degree is not supported.\n', i_cbf);
         end
         lg_cbf_sym{i_cbf} = matlabFunction(lg_cbf_i, 'vars', {x});
     end
