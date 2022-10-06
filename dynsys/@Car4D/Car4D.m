@@ -55,6 +55,7 @@ classdef Car4D < CtrlAffineSys
                 smooth_margin = 0;
             end
             stopping_distance = 0.5 * v^2 / max_acc;
+            
             avoid_center = [-0.5 * stopping_distance * cos(theta) + xo;
                 -0.5 * stopping_distance * sin(theta) + yo];
             avoid_radius = Ro + stopping_distance * 0.5 + smooth_margin;

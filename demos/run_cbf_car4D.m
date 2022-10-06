@@ -1,12 +1,12 @@
 %% This example demonstrates
 % - Target pursuing navigation of a simple 4D nonholonomic vehicle while avoiding obstacle.
 % - the usafe of a time-varying reference controller and the CBF-QP as the safety filter.
-close all;
+% close all;
 clear all;
 
 %% General
 dt = 0.02;
-max_acc = 1;
+max_acc = 5;
 max_yaw_rate = 0.5;
 u_max = [max_yaw_rate; max_acc];
 
@@ -27,7 +27,7 @@ params.xo = 0;
 params.yo = 0;
 params.Ro = 2;
 params.gamma_l = 5;
-params.cbf.rate = 1;
+params.cbf.rate = 0.5;
 
 dynsys = Car4D(params);
 % Define the function handle with additional input arguments that specify the controller settings.
@@ -40,7 +40,6 @@ ref_controller = @(t, x, varargin) dynsys.ctrl_pursue_target(t, x, 'target', ...
 % controller = ref_controller;
 controller = @(t, x, varargin) dynsys.ctrl_cbf_qp(t, x, ...
    'with_slack', with_slack, 'u_ref', ref_controller, 'active_input_bound', active_input_bound, varargin{:});
-
 
 verbose_level = 1;
 

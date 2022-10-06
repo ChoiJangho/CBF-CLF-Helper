@@ -48,15 +48,18 @@ else
         'u_ref', controller_unfiltered, varargin{:});
 end
 
+params.tau_delay = 0.3;
+plant = QuanserCartPoleInputDelay(params, '2WEIGHTS');
 
 T = 20;
 % x0 = [10*pi/12; 0; 0; 0];
 % x0 = [pi/12; 0; 0; 0];
-x0 = [0; pi-0.01; 0; -0.01];
+% x0 = [0; pi-0.01; 0; -0.01];
+x0 = [0; pi-0.01; 0; -0.01; 0];
 % x0 = [0; pi/24; 0; 0];
 % x0 = [-0.34; -0.19; -0.5; 2.17];
 
-[xs, us, ts, extraout] = rollout_controller(x0, dynsys, controller, T);
+[xs, us, ts, extraout] = rollout_controller(x0, plant, controller, T);
 if isfield(extraout, 'swing_up')
     swing_up_flags = cell2mat(extraout.swing_up);
 end
