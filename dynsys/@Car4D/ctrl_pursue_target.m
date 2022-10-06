@@ -45,7 +45,7 @@ v = x(4);
 if v < v_ref
     % apply maximal accelaration.
     a = obj.max_acc;
-elseif v < v_ref && v > 0
+elseif v > v_ref
     a = -obj.max_acc;
 else
     a = 0;
