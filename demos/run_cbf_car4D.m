@@ -1,19 +1,22 @@
 %% This example demonstrates
 % - Target pursuing navigation of a simple 4D nonholonomic vehicle while avoiding obstacle.
 % - the usafe of a time-varying reference controller and the CBF-QP as the safety filter.
-close all;
+% close all;
 clear all;
 
 %% General
-dt = 0.02;
-max_acc = 1;
+dt = 0.01;
+max_acc = 5;
 max_yaw_rate = 0.5;
 u_max = [max_yaw_rate; max_acc];
 
 %% Controller setting to test.
-params.state_dependent_input_bound = false;
-params.apply_cbf_smooth_margin = true;
-active_input_bound = true;
+% if true, apply state dependent input bound that ensures v don't exceed [0, v_max].
+params.state_dependent_input_bound = true; 
+% if true, apply some smooth margin to the cbf level set so that the cbf captures the constraint v \in [0, v_max].
+% therefore, setting this to true is useful only when state_dependent_input_bound=false.
+params.apply_cbf_smooth_margin = false;
+active_input_bound = true; % if false, apply no input bounds.
 with_slack = 0; % activate slack explicitly if 1.
 
 %% % Control parameters
@@ -27,11 +30,11 @@ params.xo = 0;
 params.yo = 0;
 params.Ro = 2;
 params.gamma_l = 5;
-params.cbf.rate = 1;
+params.cbf.rate = 0.5;
 
 dynsys = Car4D(params);
-% Define the function handle with additional input arguments that specify the controller settings.
 
+%% Define controllers
 % The reference controller is a target tracking controller. The target
 % points alternates between (2, 2), (2, -2), (-2, -2), (-2, 2) for every 10 second (specified by 'time_per_target').
 ref_controller = @(t, x, varargin) dynsys.ctrl_pursue_target(t, x, 'target', ...
@@ -40,7 +43,6 @@ ref_controller = @(t, x, varargin) dynsys.ctrl_pursue_target(t, x, 'target', ...
 % controller = ref_controller;
 controller = @(t, x, varargin) dynsys.ctrl_cbf_qp(t, x, ...
    'with_slack', with_slack, 'u_ref', ref_controller, 'active_input_bound', active_input_bound, varargin{:});
-
 
 verbose_level = 1;
 
@@ -52,7 +54,7 @@ verbose_level = 1;
 x0 = [4;0;0.0;1];
 % x0 = [1.8673; 0.7147; 
 % simulation time
-sim_t = 20;
+sim_t = 40;
 [xs, us, ts, extraout] = rollout_controller(x0, dynsys, controller, ...
     sim_t, 'dt', dt, 'verbose_level', verbose_level);
 
@@ -95,18 +97,25 @@ xlabel('t');
 ylabel('a');
 
 figure;
-subplot(3, 1, 1);
+if isfield(extraout, 'slacks')
+    n_plot = 3;
+else
+    n_plot = 2;
+end
+subplot(n_plot, 1, 1);
 plot(ts, extraout.Bs);
 ylabel('B (CBF)');
-subplot(3, 1, 2);
+fprintf("Minimum of B(x): %.3f\n", min(extraout.Bs));
+subplot(n_plot, 1, 2);
 plot(ts, extraout.feas);
 ylabel('feas');
 xlabel('t');
-subplot(3, 1, 3);
+if isfield(extraout, 'slacks')
+subplot(n_plot, 1, 3);
 plot(ts, extraout.slacks);
 xlabel('t');
 ylabel('slack');
-
+end
 
 function h = draw_circle(center,r)
 hold on
