@@ -12,9 +12,10 @@ classdef CtrlAffineSys < handle
         clf_rate % rate used in the clf constraint.
         cbf_rate % rate used in the cbf constraint.
 
-        u_max % max bound of control input.
-        u_min % min bound of control input.
-                
+        % If the input bounds are constant, this value is initialized from params.
+        u_max_constant = []  % max bound of control input.
+        u_min_constant = [] % min bound of control input.
+                        
         xdim % State dimension
         udim % Control input dimension
         dims_angle % binary indicator of the angle variables. Used to clip it to (-pi, pi]
@@ -58,6 +59,10 @@ classdef CtrlAffineSys < handle
         clf_sym % CLF function generated from symbolic expression
         lf_clf_sym % :math:`L_f V(x)` function generated from symbolic expression
         lg_clf_sym % :math:`L_g V(x)` function generated from symbolic expression
+        lf_cbf_sym_str
+        lg_cbf_sym_str
+        lf_clf_sym_str
+        lg_clf_sym_str
     end
     
     methods
@@ -170,7 +175,11 @@ classdef CtrlAffineSys < handle
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, f(x) should be overriden by user.");                
             end
-            f_ = obj.f_sym(x);            
+            f_ = zeros(size(x));
+            for i = 1:obj.xdim
+                f_(i, :) = obj.f_sym{i}(x);
+            end            
+%             f_ = obj.f_sym(x);            
         end
         
         function g_ = g(obj, x)
@@ -182,7 +191,12 @@ classdef CtrlAffineSys < handle
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.g(x) should be overriden by user.");                
             end
-            g_ = obj.g_sym(x);
+            g_ = zeros(size(x, 1), obj.udim, size(x, 2));
+            for i = 1:obj.xdim
+                for j = 1:obj.udim
+                    g_(i, j, :) = obj.g_sym{i, j}(x);
+                end
+            end
         end
         
         function Vs = clf(obj, x)
@@ -367,6 +381,16 @@ classdef CtrlAffineSys < handle
 
         function u = clipInput(obj, u)
             u = clip_input(obj, u);
+        end
+        
+        % Function handle that sets the input constraint.
+        % If user wants, time or state-varying input bounds, override these functions.
+        function u = u_max(obj, t, x)
+            u = obj.u_max_constant;
+        end
+        
+        function u = u_min(obj, t, x)
+            u = obj.u_min_constant;            
         end        
     end
     

@@ -11,8 +11,8 @@ max_yaw_rate = 0.5;
 u_max = [max_yaw_rate; max_acc];
 
 %% Controller setting to test.
-params.state_dependent_input_bound = false;
-params.apply_cbf_smooth_margin = true;
+params.state_dependent_input_bound = true;
+params.apply_cbf_smooth_margin = false;
 active_input_bound = true;
 with_slack = 0; % activate slack explicitly if 1.
 
@@ -29,7 +29,18 @@ params.Ro = 2;
 params.gamma_l = 5;
 params.cbf.rate = 1;
 
-dynsys = Car4D(params);
+%% Grid
+grid_min = [-10; -10; -pi; -0.5];  % Lower corner of computation domain
+grid_max = [10; 10; pi; 2.5];      % Upper corner of computation domain
+%N = [20; 20; 20; 20];           % Number of grid points per dimension
+% N = [40; 40; 40; 40];
+N = [101; 101; 60 ; 31];
+% N = [21; 21; 10; 16];
+g = createGrid(grid_min, grid_max, N, 3); % Create grid
+data0 = Car4DGridCbf.get_target_function(g, params);
+
+dynsys = Car4DGridCbf(params);
+dynsys.init_cbf_tables(g, data0);
 % Define the function handle with additional input arguments that specify the controller settings.
 
 % The reference controller is a target tracking controller. The target

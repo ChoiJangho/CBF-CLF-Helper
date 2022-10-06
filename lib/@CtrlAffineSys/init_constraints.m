@@ -210,6 +210,8 @@ function init_cbf_constraints_symbolic(obj, x, f_, g_, cbf_)
     cbf_sym = cell(obj.n_cbf, 1);
     lf_cbf_sym = cell(obj.n_cbf, 1);
     lg_cbf_sym = cell(obj.n_cbf, 1);
+    lf_cbf_sym_str = cell(obj.n_cbf, 1);
+    lg_cbf_sym_str = cell(obj.n_cbf, 1);
     syms('cbf_sym_array', [obj.n_cbf, 1]);
     syms('lf_cbf_', [obj.n_cbf, 1]);
     syms('lg_cbf_', [obj.n_cbf, 1]);
@@ -221,12 +223,16 @@ function init_cbf_constraints_symbolic(obj, x, f_, g_, cbf_)
         lf_cbf_i = dcbf_i * f_;
         lg_cbf_i = dcbf_i * g_;        
         lf_cbf_sym{i_cbf} = matlabFunction(lf_cbf_i, 'vars', {x});
+        lf_cbf_sym_str{i_cbf} = string(lf_cbf_i);
         if all(isAlways(simplify(lg_cbf_i) == 0, 'Unknown', 'false'))
             fprintf('Warning: Relative degree of the defined %d-th CBF > 1. Currently, High-order relative degree is not supported.\n', i_cbf);
         end
         lg_cbf_sym{i_cbf} = matlabFunction(lg_cbf_i, 'vars', {x});
+        lg_cbf_sym_str{i_cbf} = string(lg_cbf_i);
     end
     obj.cbf_sym = cbf_sym;             
     obj.lf_cbf_sym = lf_cbf_sym;
     obj.lg_cbf_sym = lg_cbf_sym;
+    obj.lf_cbf_sym_str = lf_cbf_sym_str;
+    obj.lg_cbf_sym_str = lg_cbf_sym_str;
 end

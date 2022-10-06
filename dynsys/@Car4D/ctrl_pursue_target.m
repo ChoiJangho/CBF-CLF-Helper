@@ -44,9 +44,9 @@ v = x(4);
 % Determine acceleration.
 if v < v_ref
     % apply maximal accelaration.
-    a = obj.u_max(2);
-elseif v < v_ref && v > 0
-    a = obj.u_min(2);
+    a = obj.max_acc;
+elseif v > v_ref
+    a = -obj.max_acc;
 else
     a = 0;
 end
@@ -56,7 +56,7 @@ dy = target_i(2) - p_y;
 d = sqrt(dx^2 + dy^2);
 if d < 0.001
     if v > 0
-        a = obj.u_min(2);
+        a = -obj.max_acc;
     end
     omega = 0;
     u = [omega; a];
@@ -64,7 +64,7 @@ if d < 0.001
     return
 end
 % smallest turning radius
-R = v / obj.u_max(1);
+R = v / obj.max_yaw_rate;
 if cos(theta) * dy - sin(theta) * dx > 0
     % target is on the left side of the vehicle.
     max_turn_center = [p_x - R * sin(theta);
@@ -73,16 +73,16 @@ if cos(theta) * dy - sin(theta) * dx > 0
         % if target is closer to the center of rotation than the smallest
         % turning radius, reduce the speed so that the turning radius
         % decrease.        
-        a = obj.u_min(2);
+        a = -obj.max_acc;
         % turn steep left.
-        omega = obj.u_max(1);
+        omega = obj.max_yaw_rate;
 %         omega = 0;
     else
         sin_dtheta = (cos(theta) * dy - sin(theta) * dx) / sqrt(dx^2 + dy^2);
         cos_dtheta = (cos(theta) * dx + sin(theta) * dy) / sqrt(dx^2 + dy^2);
         % turn_radius = d / sqrt(1 - cos_dtheta^2);
         if cos_dtheta < 0
-            omega = obj.u_max(1);
+            omega = obj.max_yaw_rate;
         else
             turn_radius = d / (2 * sin_dtheta);
             omega = v / turn_radius;
@@ -97,16 +97,16 @@ else
         % if target is closer to the center of rotation than the smallest
         % turning radius, reduce the speed so that the turning radius
         % decrease.        
-        a = obj.u_min(2);
+        a = -obj.max_acc;
         % turn steep right.
-        omega = obj.u_min(1);
+        omega = -obj.max_yaw_rate;
 %         omega = 0;
     else
         sin_dtheta = (sin(theta) * dx - cos(theta) * dy) / sqrt(dx^2 + dy^2);
         cos_dtheta = (cos(theta) * dx + sin(theta) * dy) / sqrt(dx^2 + dy^2);
         % turn_radius = d / sqrt(1 - cos_dtheta^2);
         if cos_dtheta < 0
-            omega = obj.u_min(1);
+            omega = -obj.max_yaw_rate;
         else
             turn_radius = d / (2 * sin_dtheta);
             omega = -v / turn_radius;
