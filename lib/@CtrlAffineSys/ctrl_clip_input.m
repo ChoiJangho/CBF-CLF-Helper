@@ -16,13 +16,13 @@ function [u, extraout] = ctrl_clip_input(obj, t, x, varargin)
     end
     
     if ~isfield(kwargs, 'u_max')
-        u_max = obj.u_max;
+        u_max = obj.u_max(t, x);
     else
         u_max = kwargs.u_max;
     end
     
     if ~isfield(kwargs, 'u_min')
-        u_min = obj.u_min;
+        u_min = obj.u_min(t, x);
     else
         u_min = kwargs.u_min;
     end

@@ -4,6 +4,8 @@ dt = 0.01;
 
 % Toggle to activate or deactivate CBF-QP.
 use_cbf_filter = true;
+introduce_delay = true;
+
 % Choice of Model Type: options:
 %   'ONES': set every model parameters to 1 (including the gravity)
 %   'QUANSER': Using the full quanser parameter values
@@ -48,8 +50,12 @@ else
         'u_ref', controller_unfiltered, varargin{:});
 end
 
-params.tau_delay = 0.3;
-plant = QuanserCartPoleInputDelay(params, '2WEIGHTS');
+if introduce_delay
+    params.tau_delay = 0.2;
+    plant = QuanserCartPoleInputDelay(params, '2WEIGHTS');
+else
+    plant = QuanserCartPole(params, '2WEIGHTS');
+end
 
 T = 20;
 % x0 = [10*pi/12; 0; 0; 0];
@@ -117,15 +123,23 @@ grid on;
 subplot(num_plots, 1, 5);
 plot(ts, us);
 ylabel('$u$');
+if introduce_delay
+    hold on;
+    plot(ts, xs(5, :));
+    us_delayed_estimate = estimate_delayed_input_signal(us, ts, params.tau_delay);
+    plot(ts, us_delayed_estimate);
+    legend('$u$', '$u_{true}$', '$u_{shifted}$', 'interpreter', 'latex');
+end    
 grid on;
 
 if exist('swing_up_flags', 'var')
     subplot(num_plots, 1, 6);
     scatter(ts, swing_up_flags);
     ylabel('Swing up mode');
-    xlabel('$t$');
     grid on;
 end
+xlabel('$t$');
+
 
 fig2 = open_figure('font_size', 15, 'size', [1200, 900]);
 subplot(3, 1, 1);

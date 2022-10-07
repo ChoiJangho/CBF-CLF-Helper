@@ -30,13 +30,9 @@ for i = 1:length(ts)
 end
 
 if ~isempty(extras) && isfield(extras, 'LfBhat')
-    gp_mean = zeros(size(ts));
-    gp_upper = zeros(size(ts));
-    gp_lower = zeros(size(ts));
+    LgBhats = zeros(size(ts));
     for i = 1:length(ts)
-        gp_mean(i) = extras.LfBhat{i} + extras.LgBhat{i} * us(:, i) - dynsys.dcbf(xs(:, i), us(:, i));
-        gp_upper(i) = extras.LfBhat{i} + extras.LgBhat{i} * us(:, i) + extras.beta{i} * extras.sigma{i} - dynsys.dcbf(xs(:, i), us(:, i));
-        gp_lower(i) = extras.LfBhat{i} + extras.LgBhat{i} * us(:, i) - extras.beta{i} * extras.sigma{i} - dynsys.dcbf(xs(:, i), us(:, i));
+        LgBhats(i) = extras.LgBhat{i};
     end
 end
 
@@ -122,44 +118,17 @@ ylabel('$u$');
 grid on;
 xlim([ts(1), ts(end)]);
 
-% nexttile;
-% plot(ts, Eps);
-% hold on;
-% line([ts(1), ts(end)], dynsys.potential_energy_upright() * ones(1, 2), 'Color', 'r');
-% ylabel('$E_p(t)$ (Pendulum Energy)');
-% grid on;
-% xlim([ts(1), ts(end)]);
-% 
-% nexttile;
-% plot(ts, Vs);
-% ylabel('$V(x(t))$ (CLF)');
-% grid on;
-% xlim([ts(1), ts(end)]);
-
 nexttile;
 plot(ts, Bs);
 ylabel('$B(x(t))$ (CBF)');
 grid on;
 xlim([ts(1), ts(end)]);
 
-if ~isempty(extras) && isfield(extras, 'LfBhat')
-    nexttile;
-    plot(ts, gp_mean, 'LineWidth', 2); hold on;
-    plot(ts, gp_lower, 'r');
-    plot(ts, gp_upper, 'r');
-    if ~isempty(train_data)
-        scatter(train_data.ts_train, train_data.zs_train, 'x');
-    end
-    grid on;
-    xlim([ts(1), ts(end)]);
-    ylabel('$\mu \pm \beta \sigma$');
-else
-    nexttile;
-    plot(ts, cbf_constraints);
-    ylabel('$\tilde{\dot{B}}(x,u) + \gamma B(x)$');
-    grid on;
-    xlim([ts(1), ts(end)]);
-end
+nexttile;
+plot(ts, cbf_constraints);
+ylabel('$\tilde{\dot{B}}(x,u) + \gamma B(x)$');
+grid on;
+xlim([ts(1), ts(end)]);
 
 if ~isempty(extras)
     nexttile;
