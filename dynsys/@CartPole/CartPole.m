@@ -19,7 +19,14 @@ classdef CartPole < CtrlAffineSys
         
         A_sym % Symbolix expression for the Jacobian matrix at the origin
         A_origin % Jacobian Matrix at the origin
-        B_origin % Jacobian Matrix at the origin                
+        B_origin % Jacobian Matrix at the origin
+        P_origin
+        K_origin
+        A_stable_eq % Jacobian Matrix at the stable equilibrium
+        B_stable_eq % Jacobian Matrix at the stable equilibrium
+        P_stable_eq % Gram matrix of the Lyapunov function at the stable equilibrium
+        K_stable_eq
+        clf_rate_stable_eq
     end
     
     methods
@@ -97,6 +104,9 @@ classdef CartPole < CtrlAffineSys
         end
         function E = potential_energy_upright(obj)
             E = obj.m * obj.gravity * obj.l;
+        end
+        function E = potential_energy_downright(obj)
+            E = - obj.m * obj.gravity * obj.l;
         end
         
         function P = linear_momentum(obj, x)

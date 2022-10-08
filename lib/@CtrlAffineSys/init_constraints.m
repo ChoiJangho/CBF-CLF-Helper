@@ -98,11 +98,13 @@ if init_clf
         clf_rate = params.clf.rate;
     elseif isfield(params, 'clf_rate')
         clf_rate = params.clf_rate;
-    elseif obj.n_clf >= 1
+    elseif obj.n_clf >= 1 && isempty(obj.clf_rate)
         error("params.clf.rate or params.clf_rate should be provided %s", ...
-            "in order to use CLF.");
+            "or obj.clf_rate should be set up in order to use CLF.");
+    else
+        clf_rate = [];
     end
-    if obj.n_clf >= 1
+    if ~isempty(clf_rate) && obj.n_clf >= 1
         if length(clf_rate) == 1
             obj.clf_rate = clf_rate * ones(obj.n_clf, 1);
         elseif length(clf_rate) ~= obj.n_clf
@@ -114,6 +116,16 @@ if init_clf
                 obj.clf_rate = clf_rate;
             end
         end    
+    else
+        if length(obj.clf_rate) == 1
+            obj.clf_rate = obj.clf_rate * ones(obj.n_clf, 1);
+        elseif length(obj.clf_rate) ~= obj.n_clf
+            error("Invalid size of params.clf.rate");
+        else
+            if isrow(obj.clf_rate)
+                obj.clf_rate = obj.clf_rate';
+            end
+        end                  
     end
     
     %% Initialize constraints mask
