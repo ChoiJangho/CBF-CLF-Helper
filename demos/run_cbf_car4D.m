@@ -37,8 +37,9 @@ dynsys = Car4D(params);
 %% Define controllers
 % The reference controller is a target tracking controller. The target
 % points alternates between (2, 2), (2, -2), (-2, -2), (-2, 2) for every 10 second (specified by 'time_per_target').
+targets = [2, 2; 2, -2; -2, -2; -2, 2]';
 ref_controller = @(t, x, varargin) dynsys.ctrl_pursue_target(t, x, 'target', ...
-    [2, 2; 2, -2; -2, -2; -2, 2]', 'v_ref', 1, 'time_per_target', 10, 'periodic', true, varargin{:});
+    targets, 'v_ref', 1, 'time_per_target', 10, 'periodic', true, varargin{:});
 
 % controller = ref_controller;
 controller = @(t, x, varargin) dynsys.ctrl_cbf_qp(t, x, ...
@@ -80,7 +81,9 @@ xlabel('t')
 %% Plot Trajectory with the obstacle.
 figure;
 p = plot(xs(1, :), xs(2, :)); hold on; grid on;
-draw_circle([params.xo; params.yo], params.Ro, 'face_alpha', 0.3);
+draw_circle([params.xo; params.yo], params.Ro, 'face_alpha', 0.3); hold on;
+scatter(targets(1, :), targets(2, :))
+
 xlabel('$x$ [m]', 'Interpreter', 'latex')
 ylabel('$y$ [m]', 'Interpreter', 'latex')
 axis equal;
