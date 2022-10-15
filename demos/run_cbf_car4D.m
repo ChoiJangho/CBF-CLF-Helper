@@ -80,7 +80,7 @@ xlabel('t')
 %% Plot Trajectory with the obstacle.
 figure;
 p = plot(xs(1, :), xs(2, :)); hold on; grid on;
-draw_circle([params.xo; params.yo], params.Ro);
+draw_circle([params.xo; params.yo], params.Ro, 'face_alpha', 0.3);
 xlabel('$x$ [m]', 'Interpreter', 'latex')
 ylabel('$y$ [m]', 'Interpreter', 'latex')
 axis equal;
@@ -115,13 +115,4 @@ subplot(n_plot, 1, 3);
 plot(ts, extraout.slacks);
 xlabel('t');
 ylabel('slack');
-end
-
-function h = draw_circle(center,r)
-hold on
-th = 0:pi/50:2*pi;
-xunit = r * cos(th) + center(1);
-yunit = r * sin(th) + center(2);
-h = plot(xunit, yunit);
-hold off
 end
