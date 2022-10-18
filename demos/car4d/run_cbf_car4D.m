@@ -119,3 +119,8 @@ plot(ts, extraout.slacks);
 xlabel('t');
 ylabel('slack');
 end
+
+%% Animation
+obstacle.center = [dynsys.params.xo; dynsys.params.yo];
+obstacle.radius = dynsys.params.Ro;
+animate_car4d_trajectory(ts, xs, 'obstacle', obstacle);

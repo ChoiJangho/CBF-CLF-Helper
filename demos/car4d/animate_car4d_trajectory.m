@@ -1,4 +1,5 @@
 function animate_car4d_trajectory(time_stamps, trajectory, varargin)
+%% animate_car4d_trajectory(time_stamps, trajectory, varargin)
 % Animate the car 4d trajectory in video fashion.
 % Note. Car is not circular, but is denoted as circular for convenience.
 % Input
@@ -92,6 +93,8 @@ for i = 1: traj_length
     if rem(time_stamps(i), dt_frame) >= dt
         continue
     end
+    title_with_stamp = strcat("Car 4D Trajectory (T:", num2str(time_stamps(i)), "(s))");
+    title(t, title_with_stamp);
 
     center = trajectory(1:2, i);
     theta  = trajectory(3, i);
