@@ -55,6 +55,7 @@ dx = target_i(1) - p_x;
 dy = target_i(2) - p_y;
 d = sqrt(dx^2 + dy^2);
 if d < 0.001
+    % This might drive v < 0 (?)
     if v > 0
         a = -obj.max_acc;
     end
