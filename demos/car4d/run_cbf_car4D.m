@@ -6,7 +6,7 @@ clear all;
 
 %% General
 dt = 0.01;
-max_acc = 5;
+max_acc = 1;
 max_yaw_rate = 0.5;
 u_max = [max_yaw_rate; max_acc];
 
@@ -33,17 +33,21 @@ params.gamma_l = 5;
 params.cbf.rate = 0.5;
 
 dynsys = Car4D(params);
+dynsys_for_filter = Car4DForFilteredInput(params);
 
 %% Define controllers
 % The reference controller is a target tracking controller. The target
 % points alternates between (2, 2), (2, -2), (-2, -2), (-2, 2) for every 10 second (specified by 'time_per_target').
+% ref_controller = @(t, x, varargin) dynsys.ctrl_pursue_target(t, x, 'target', ...
+%     [2, 2; 2, -2; -2, -2; -2, 2]', 'v_ref', 1, 'time_per_target', 10, 'periodic', true, varargin{:});
 targets = [2, 2; 2, -2; -2, -2; -2, 2]';
-ref_controller = @(t, x, varargin) dynsys.ctrl_pursue_target(t, x, 'target', ...
+raw_controller = @(t, x, varargin) dynsys.ctrl_pursue_target(t, x, 'target', ...
     targets, 'v_ref', 1, 'time_per_target', 10, 'periodic', true, varargin{:});
+ref_controller = @(t, x, varargin) dynsys_for_filter.ctrl_lpf(t, x, raw_controller, varargin{:});
 
-% controller = ref_controller;
-controller = @(t, x, varargin) dynsys.ctrl_cbf_qp(t, x, ...
-   'with_slack', with_slack, 'u_ref', ref_controller, 'active_input_bound', active_input_bound, varargin{:});
+controller = ref_controller;
+% controller = @(t, x, varargin) dynsys.ctrl_cbf_qp(t, x, ...
+%   'with_slack', with_slack, 'u_ref', ref_controller, 'active_input_bound', active_input_bound, varargin{:});
 
 verbose_level = 1;
 
