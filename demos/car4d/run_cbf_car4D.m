@@ -40,8 +40,9 @@ dynsys_for_filter = Car4DForFilteredInput(params);
 % points alternates between (2, 2), (2, -2), (-2, -2), (-2, 2) for every 10 second (specified by 'time_per_target').
 % ref_controller = @(t, x, varargin) dynsys.ctrl_pursue_target(t, x, 'target', ...
 %     [2, 2; 2, -2; -2, -2; -2, 2]', 'v_ref', 1, 'time_per_target', 10, 'periodic', true, varargin{:});
+targets = [2, 2; 2, -2; -2, -2; -2, 2]';
 raw_controller = @(t, x, varargin) dynsys.ctrl_pursue_target(t, x, 'target', ...
-    [2, 2; 2, -2; -2, -2; -2, 2]', 'v_ref', 1, 'time_per_target', 10, 'periodic', true, varargin{:});
+    targets, 'v_ref', 1, 'time_per_target', 10, 'periodic', true, varargin{:});
 ref_controller = @(t, x, varargin) dynsys_for_filter.ctrl_lpf(t, x, raw_controller, varargin{:});
 
 controller = ref_controller;
@@ -84,7 +85,9 @@ xlabel('t')
 %% Plot Trajectory with the obstacle.
 figure;
 p = plot(xs(1, :), xs(2, :)); hold on; grid on;
-draw_circle([params.xo; params.yo], params.Ro);
+draw_circle([params.xo; params.yo], params.Ro, 'face_alpha', 0.3); hold on;
+scatter(targets(1, :), targets(2, :))
+
 xlabel('$x$ [m]', 'Interpreter', 'latex')
 ylabel('$y$ [m]', 'Interpreter', 'latex')
 axis equal;
@@ -121,11 +124,7 @@ xlabel('t');
 ylabel('slack');
 end
 
-function h = draw_circle(center,r)
-hold on
-th = 0:pi/50:2*pi;
-xunit = r * cos(th) + center(1);
-yunit = r * sin(th) + center(2);
-h = plot(xunit, yunit);
-hold off
-end
+%% Animation
+obstacle.center = [dynsys.params.xo; dynsys.params.yo];
+obstacle.radius = dynsys.params.Ro;
+animate_car4d_trajectory(ts, xs, 'obstacle', obstacle);
