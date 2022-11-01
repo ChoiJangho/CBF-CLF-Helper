@@ -16,6 +16,7 @@ params.state_dependent_input_bound = true;
 % if true, apply some smooth margin to the cbf level set so that the cbf captures the constraint v \in [0, v_max].
 % therefore, setting this to true is useful only when state_dependent_input_bound=false.
 params.apply_cbf_smooth_margin = false;
+params.dt_for_cbf_guarantee = dt;
 active_input_bound = true; % if false, apply no input bounds.
 with_slack = 0; % activate slack explicitly if 1.
 
@@ -59,6 +60,7 @@ x0 = [4;0;0.0;1];
 % x0 = [1.8673; 0.7147; 
 % simulation time
 sim_t = 40;
+sim_t = 100;
 [xs, us, ts, extraout] = rollout_controller(x0, dynsys, controller, ...
     sim_t, 'dt', dt, 'verbose_level', verbose_level);
 
