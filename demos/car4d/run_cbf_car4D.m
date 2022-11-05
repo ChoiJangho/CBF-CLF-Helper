@@ -35,14 +35,18 @@ params.cbf.rate = 0.5;
 
 dynsys = Car4D(params);
 dynsys_for_filter = Car4DForFilteredInput(params);
+dynsys_for_filter.set_filter_ratio(0.8);
 
 %% Define controllers
 % The reference controller is a target tracking controller. The target
 % points alternates between (2, 2), (2, -2), (-2, -2), (-2, 2) for every 10 second (specified by 'time_per_target').
 
 targets = [2, 2; 2, -2; -2, -2; -2, 2]';
+v_ref_func =  @(t, x) (1 + 0.5*sin(0.5*pi*t));
+% raw_controller = @(t, x, varargin) dynsys.ctrl_pursue_target(t, x, 'target', ...
+%     targets, 'v_ref', 1, 'time_per_target', 10, 'periodic', true, varargin{:});
 raw_controller = @(t, x, varargin) dynsys.ctrl_pursue_target(t, x, 'target', ...
-    targets, 'v_ref', 1, 'time_per_target', 10, 'periodic', true, varargin{:});
+    targets, 'v_ref', v_ref_func, 'time_per_target', 10, 'periodic', true, varargin{:});
 ref_controller = @(t, x, varargin) dynsys_for_filter.ctrl_lpf(t, x, raw_controller, varargin{:});
 
 % controller = ref_controller;
@@ -56,11 +60,11 @@ verbose_level = 1;
 % x0 = [-8;0.01;0.0;1.5];
 % x0 = [-5;0;0.0;1];
 % x0 = [-1;-2;0.0;1];
+show_animation = false;
 x0 = [4;0;0.0;1];
 % x0 = [1.8673; 0.7147; 
 % simulation time
 sim_t = 40;
-sim_t = 100;
 [xs, us, ts, extraout] = rollout_controller(x0, dynsys, controller, ...
     sim_t, 'dt', dt, 'verbose_level', verbose_level);
 
@@ -126,6 +130,8 @@ ylabel('slack');
 end
 
 %% Animation
+if show_animation
 obstacle.center = [dynsys.params.xo; dynsys.params.yo];
 obstacle.radius = dynsys.params.Ro;
 animate_car4d_trajectory(ts, xs, 'obstacle', obstacle);
+end

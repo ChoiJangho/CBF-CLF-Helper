@@ -34,7 +34,13 @@ end
 if ~isfield(kwargs, 'v_ref')
     error("'v_ref' must be given as additional arugment to evaluate the acceleration.");
 end
-v_ref = kwargs.v_ref;
+
+v_ref_ = kwargs.v_ref;
+if isa(v_ref_, 'function_handle')
+    v_ref = v_ref_(t, x);
+elseif isa(v_ref_, 'numeric')
+    v_ref = v_ref_;
+end
 
 p_x = x(1);
 p_y = x(2);

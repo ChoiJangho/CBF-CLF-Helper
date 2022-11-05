@@ -75,9 +75,9 @@ classdef Car4D < CtrlAffineSys
             v = x(4);
             u = obj.u_min_constant;
             % Note. this is hacking, we should be aware of dt, which is a
-            % sampling time to do this.
+            % sampling time, to do this.
             dt = 0.01;
-            if v <= (obj.v_min + dt * obj.u_max_constant(2)) && obj.state_dependent_input_bound
+            if v <= (obj.v_min - dt * u(2)) && obj.state_dependent_input_bound
                 u(2) = 0;
             end
         end
