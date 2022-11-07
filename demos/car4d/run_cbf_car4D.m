@@ -1,8 +1,7 @@
 %% This example demonstrates
 % - Target pursuing navigation of a simple 4D nonholonomic vehicle while avoiding obstacle.
 % - the usafe of a time-varying reference controller and the CBF-QP as the safety filter.
-% close all;
-clear all;
+clear all; close all;
 
 %% General
 dt = 0.01;
@@ -35,18 +34,14 @@ params.cbf.rate = 0.5;
 
 dynsys = Car4D(params);
 dynsys_for_filter = Car4DForFilteredInput(params);
-dynsys_for_filter.set_filter_ratio(0.8);
 
 %% Define controllers
 % The reference controller is a target tracking controller. The target
 % points alternates between (2, 2), (2, -2), (-2, -2), (-2, 2) for every 10 second (specified by 'time_per_target').
 
 targets = [2, 2; 2, -2; -2, -2; -2, 2]';
-v_ref_func =  @(t, x) (1 + 0.5*sin(0.5*pi*t));
-% raw_controller = @(t, x, varargin) dynsys.ctrl_pursue_target(t, x, 'target', ...
-%     targets, 'v_ref', 1, 'time_per_target', 10, 'periodic', true, varargin{:});
 raw_controller = @(t, x, varargin) dynsys.ctrl_pursue_target(t, x, 'target', ...
-    targets, 'v_ref', v_ref_func, 'time_per_target', 10, 'periodic', true, varargin{:});
+    targets, 'v_ref', 1, 'time_per_target', 10, 'periodic', true, varargin{:});
 ref_controller = @(t, x, varargin) dynsys_for_filter.ctrl_lpf(t, x, raw_controller, varargin{:});
 
 % controller = ref_controller;
@@ -56,13 +51,9 @@ controller = @(t, x, varargin) dynsys.ctrl_cbf_qp(t, x, ...
 verbose_level = 1;
 
 %% Results
+show_animation = true;
 % initial state
-% x0 = [-8;0.01;0.0;1.5];
-% x0 = [-5;0;0.0;1];
-% x0 = [-1;-2;0.0;1];
-show_animation = false;
 x0 = [4;0;0.0;1];
-% x0 = [1.8673; 0.7147; 
 % simulation time
 sim_t = 40;
 [xs, us, ts, extraout] = rollout_controller(x0, dynsys, controller, ...
@@ -129,7 +120,7 @@ xlabel('t');
 ylabel('slack');
 end
 
-%% Animation
+%% Animation of car 4d
 if show_animation
 obstacle.center = [dynsys.params.xo; dynsys.params.yo];
 obstacle.radius = dynsys.params.Ro;
