@@ -84,6 +84,7 @@ end
 
 v = interpn(grid.vs{:}, table, interpn_argin_x{:}, interp_method);
 if isnan(v)
-    error("xs out of grid boundary.");
+    v = inf;
+%     error("xs out of grid boundary.");
 end
 end

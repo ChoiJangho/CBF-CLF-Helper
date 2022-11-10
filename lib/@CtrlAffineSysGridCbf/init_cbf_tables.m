@@ -1,4 +1,21 @@
 function init_cbf_tables(obj, grid, cbf_table)
+    obj.n_cbf = 1;
+    obj.cbf_active_mask = 1;
+    obj.n_cbf_active = 1;
+    if isfield(obj.params, 'cbf') && isfield(obj.params.cbf, 'rate')
+        cbf_rate = obj.params.cbf.rate;
+    elseif isfield(obj.params, 'cbf_rate')
+        cbf_rate = obj.params.cbf_rate;
+    else
+        error("params.cbf.rate or params.cbf_rate should be provided %s", ...
+            "in order to use CBF.");
+    end
+    if length(cbf_rate) == 1
+        obj.cbf_rate = cbf_rate * ones(obj.n_cbf, 1);
+    else
+        error("Invalid size of params.cbf.rate");
+    end
+
     obj.grid = grid;
     obj.cbf_grid = cbf_table;
     obj.dcbf_grid = computeGradients(grid, cbf_table);
@@ -34,5 +51,5 @@ function init_cbf_tables(obj, grid, cbf_table)
         end
     end
     obj.lf_cbf_grid = lf_cbf;
-    obj.lg_cbf_grid = lg_cbf;
+    obj.lg_cbf_grid = lg_cbf;    
 end

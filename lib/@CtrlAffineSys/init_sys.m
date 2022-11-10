@@ -184,16 +184,16 @@ function init_sys(obj, params, init_constraints)
     end
     
     %% Do sanity check if all necessary functions are set up properly.
-    x_test = zeros(obj.xdim, 1);
+%     x_test = zeros(obj.xdim, 1);
     % Vector fields.
     % Error should occure if they are not set properly.
-    f_test = obj.f(x_test);
-    g_test = obj.g(x_test);
-    if size(f_test, 1) ~= obj.xdim || size(f_test, 2) ~= 1
-        error("f has wrong size.");
-    elseif size(g_test, 1) ~= obj.xdim || size(g_test, 2) ~= obj.udim
-        error("g has wrong size.");
-    end
+%     f_test = obj.f(x_test);
+%     g_test = obj.g(x_test);
+%     if size(f_test, 1) ~= obj.xdim || size(f_test, 2) ~= 1
+%         error("f has wrong size.");
+%     elseif size(g_test, 1) ~= obj.xdim || size(g_test, 2) ~= obj.udim
+%         error("g has wrong size.");
+%     end
         
     fprintf(obj.get_dynsys_summary());
     obj.is_sys_initialized = true;

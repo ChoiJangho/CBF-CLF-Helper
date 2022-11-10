@@ -1,5 +1,7 @@
 function init_constraints(obj, params, varargin)
-
+%% obj.init_constraints(params, varargin)
+% example:
+%   obj.init_constraints(obj.params, 'init_clf', true, 'init_cbf', true);
 kwargs = parse_function_args(varargin{:});
 init_clf = 1;
 if isfield(kwargs, 'init_clf')
