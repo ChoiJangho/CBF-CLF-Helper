@@ -1,6 +1,6 @@
 classdef Car4DForFilteredInput < Car4D
     properties
-        filter_ratio = 0.2;
+        filter_ratio = 0.1;
         u_filtered;
     end
     methods

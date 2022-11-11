@@ -35,6 +35,34 @@ classdef Car4D < CtrlAffineSys
             g = [0, 0; 0, 0; 1, 0; 0, 1;];
         end
         
+%         function cbf = defineCbf(obj, params, x_sym)
+%             xo = params.xo;
+%             yo = params.yo;
+%             Ro = params.Ro;
+%             p_x = x_sym(1);
+%             p_y = x_sym(2);
+%             theta = x_sym(3);
+%             v = x_sym(4);
+%             max_acc = obj.u_max_constant(2);
+% %             lx = (p_x - xo)^2 + (p_y - yo)^2 - Ro^2;            
+% %             dlx = 2 * (p_x - xo) * v * cos(theta) + ...
+% %                 2 * (p_y -yo) * v * sin(theta);
+% %             cbf = dlx + params.gamma_l * lx;
+%                         
+%             if params.apply_cbf_smooth_margin
+%                 smooth_factor = 0.25;
+%                 smooth_margin = smooth_factor * (1 - sqrt(1 - (1 - 2 * v / params.v_max)^2));
+%             else                
+%                 smooth_margin = 0;
+%             end
+%             stopping_distance = 0.5 * v^2 / max_acc;
+%             
+%             avoid_center = [-0.5 * stopping_distance * cos(theta) + xo;
+%                 -0.5 * stopping_distance * sin(theta) + yo];
+%             avoid_radius = Ro + stopping_distance * 0.5 + smooth_margin;
+%             cbf = sqrt((p_x - avoid_center(1))^2 + (p_y - avoid_center(2))^2) - avoid_radius;
+%         end
+        
         function cbf = defineCbf(obj, params, x_sym)
             xo = params.xo;
             yo = params.yo;
@@ -43,25 +71,22 @@ classdef Car4D < CtrlAffineSys
             p_y = x_sym(2);
             theta = x_sym(3);
             v = x_sym(4);
+            omega = obj.u_max_constant(1);
             max_acc = obj.u_max_constant(2);
-%             lx = (p_x - xo)^2 + (p_y - yo)^2 - Ro^2;            
-%             dlx = 2 * (p_x - xo) * v * cos(theta) + ...
-%                 2 * (p_y -yo) * v * sin(theta);
-%             cbf = dlx + params.gamma_l * lx;
+            v_min = params.v_min_desired;
+            v_max = params.v_max;
+            r_steer = v_max / omega;
+            steering_distance = Ro * (sqrt(1 + 2*r_steer / (Ro * omega)) -1 );
+            d = 0.5 * steering_distance;
+            tau = 0.5 * v_max / max_acc;
+            distance_margin = d + tau * (v - v_min);
             
-            if params.apply_cbf_smooth_margin
-                smooth_factor = 0.25;
-                smooth_margin = smooth_factor * (1 - sqrt(1 - (1 - 2 * v / params.v_max)^2));
-            else                
-                smooth_margin = 0;
-            end
-            stopping_distance = 0.5 * v^2 / max_acc;
-            
-            avoid_center = [-0.5 * stopping_distance * cos(theta) + xo;
-                -0.5 * stopping_distance * sin(theta) + yo];
-            avoid_radius = Ro + stopping_distance * 0.5 + smooth_margin;
+            avoid_center = [-distance_margin * cos(theta) + xo;
+                -distance_margin * sin(theta) + yo];
+            avoid_radius = Ro + distance_margin;
             cbf = sqrt((p_x - avoid_center(1))^2 + (p_y - avoid_center(2))^2) - avoid_radius;
-        end
+        end        
+        
         
         function u = u_max(obj, t, x)
             v = x(4);

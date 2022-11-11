@@ -6,7 +6,7 @@ clear all; close all;
 %% General
 dt = 0.01;
 max_acc = 1;
-max_yaw_rate = 0.5;
+max_yaw_rate = 2.0;
 u_max = [max_yaw_rate; max_acc];
 
 %% Controller setting to test.
@@ -23,14 +23,15 @@ with_slack = 0; % activate slack explicitly if 1.
 params.u_max = u_max;
 params.u_min = -u_max;
 params.weight.slack = 1000000;
-params.v_target = 5;
-params.v_max = 10;
+params.v_target = 3;
+params.v_max = 5;
+params.v_min = 0;
+params.v_min_desired = 1;
 %% CBF
 params.xo = 0;
 params.yo = 0;
-params.Ro = 2;
-params.gamma_l = 5;
-params.cbf.rate = 0.5;
+params.Ro = 3;
+params.cbf.rate = 10;
 
 dynsys = Car4D(params);
 dynsys_for_filter = Car4DForFilteredInput(params);
@@ -39,23 +40,28 @@ dynsys_for_filter = Car4DForFilteredInput(params);
 % The reference controller is a target tracking controller. The target
 % points alternates between (2, 2), (2, -2), (-2, -2), (-2, 2) for every 10 second (specified by 'time_per_target').
 
-targets = [2, 2; 2, -2; -2, -2; -2, 2]';
+% targets = [2, 2; 2, -2; -2, -2; -2, 2]';
+% targets = [4, 4; 4, -4; -4, -4; -4, 4]';
+% targets = 7 * [1, 1; 1, -1; -1, -1; -1, 1]'; % clockwise
+% targets = 7 * [1, 1; -1, 1; -1, -1; 1, -1]'; % counterclockwise
+targets = 5 * [1, 1; -1, -1; -1, 1; 1, -1]'; % zigzag
+time_per_target = 5;
 raw_controller = @(t, x, varargin) dynsys.ctrl_pursue_target(t, x, 'target', ...
-    targets, 'v_ref', 1, 'time_per_target', 10, 'periodic', true, varargin{:});
+    targets, 'v_ref', params.v_target, 'time_per_target', time_per_target, 'periodic', true, varargin{:});
 ref_controller = @(t, x, varargin) dynsys_for_filter.ctrl_lpf(t, x, raw_controller, varargin{:});
 
-% controller = ref_controller;
+controller = ref_controller;
 controller = @(t, x, varargin) dynsys.ctrl_cbf_qp(t, x, ...
-  'with_slack', with_slack, 'u_ref', ref_controller, 'active_input_bound', active_input_bound, varargin{:});
+'with_slack', with_slack, 'u_ref', ref_controller, 'active_input_bound', active_input_bound, varargin{:});
 
 verbose_level = 1;
 
 %% Results
 show_animation = true;
 % initial state
-x0 = [4;0;0.0;1];
+x0 = [4;0;0.0;7.5];
 % simulation time
-sim_t = 40;
+sim_t = 20;
 [xs, us, ts, extraout] = rollout_controller(x0, dynsys, controller, ...
     sim_t, 'dt', dt, 'verbose_level', verbose_level);
 
