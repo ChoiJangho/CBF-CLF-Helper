@@ -78,7 +78,7 @@ classdef Car4D < CtrlAffineSys
             r_steer = v_max / omega;
             steering_distance = Ro * (sqrt(1 + 2*r_steer / (Ro * omega)) -1 );
             d = 0.5 * steering_distance;
-            tau = 0.5 * v_max / max_acc;
+            tau = 0.5 * v_max / max_acc; 
             distance_margin = d + tau * (v - v_min);
             
             avoid_center = [-distance_margin * cos(theta) + xo;
