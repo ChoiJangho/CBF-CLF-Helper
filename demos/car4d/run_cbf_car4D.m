@@ -44,7 +44,9 @@ dynsys_for_filter = Car4DForFilteredInput(params);
 % targets = [4, 4; 4, -4; -4, -4; -4, 4]';
 % targets = 7 * [1, 1; 1, -1; -1, -1; -1, 1]'; % clockwise
 % targets = 7 * [1, 1; -1, 1; -1, -1; 1, -1]'; % counterclockwise
-targets = 5 * [1, 1; -1, -1; -1, 1; 1, -1]'; % zigzag
+% targets = 5 * [1, 1; -1, -1; -1, 1; 1, -1]'; % zigzag
+targets = 7 * [1, 1; 2, 2;]'; % zigzag
+
 time_per_target = 5;
 raw_controller = @(t, x, varargin) dynsys.ctrl_pursue_target(t, x, 'target', ...
     targets, 'v_ref', params.v_target, 'time_per_target', time_per_target, 'periodic', true, varargin{:});
@@ -59,11 +61,17 @@ verbose_level = 1;
 %% Results
 show_animation = true;
 % initial state
-x0 = [4;0;0.0;7.5];
+x0 = [4;0;0.0;5];
 % simulation time
-sim_t = 20;
+sim_t = 10;
 [xs, us, ts, extraout] = rollout_controller(x0, dynsys, controller, ...
     sim_t, 'dt', dt, 'verbose_level', verbose_level);
+
+LgBs = [];
+for i  = 1:length(ts)
+    LgB_i = dynsys.lg_cbf(xs(:, i));
+    LgBs = [LgBs; LgB_i];
+end
 
 %% Plot state history
 figure;
@@ -125,6 +133,13 @@ plot(ts, extraout.slacks);
 xlabel('t');
 ylabel('slack');
 end
+
+figure;
+subplot(2, 1, 1);
+plot(ts, LgBs(:, 1));
+subplot(2, 1, 2);
+plot(ts, LgBs(:, 2));
+
 
 %% Animation of car 4d
 if show_animation

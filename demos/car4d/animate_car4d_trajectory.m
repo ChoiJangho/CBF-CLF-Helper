@@ -12,7 +12,7 @@ function animate_car4d_trajectory(time_stamps, trajectory, varargin)
 %       obstacle
 kwargs = parse_function_args(varargin{:});
 
-save_video = false;
+save_video = true;
 if isfield(kwargs, 'save_dir')
     save_video = true;
     save_dir = kwargs.save_dir;
@@ -21,6 +21,25 @@ end
 dt_frame = 0.2;
 if isfield(kwargs, 'dt_frame')
     dt_frame = kwargs.dt_frame;
+end
+
+if isfield(kwargs, 'targets')
+    targets = kwargs.targets;
+else
+    targets = [];
+end
+num_target = size(targets, 2);
+
+if isfield(kwargs, 'time_per_target')
+    time_per_target = kwargs.time_per_target;
+else
+    time_per_target = [];
+end
+
+if isfield(kwargs, 'cbfs')
+    cbfs = kwargs.cbfs;
+else
+    cbfs = [];
 end
 
 if save_video
@@ -101,21 +120,63 @@ for i = 1: traj_length
     v      = trajectory(4, i);
     unit_vector = [cos(theta); sin(theta)];
     
+    %% Draw CBF level set
+    syms x y
+    xo = obstacle.center(1);
+    yo = obstacle.center(2)
+    Ro = obstacle.radius;
+    omega = 2;
+    max_acc = 1;
+    v_min = 1;
+    v_max = 5;
+    r_steer = v_max / omega;
+    steering_distance = Ro * (sqrt(1 + 2*r_steer / (Ro * omega)) -1 );
+    d = 0.5 * steering_distance;
+    tau = 0.5 * v_max / max_acc;
+    distance_margin = d + tau * (v - v_min);
+            
+    avoid_center = [-distance_margin * cos(theta) + xo;
+        -distance_margin * sin(theta) + yo];
+    avoid_radius = Ro + distance_margin;
+    cbf = sqrt((x - avoid_center(1))^2 + (y - avoid_center(2))^2) - avoid_radius;    
+    cbf_curve = fcontour(cbf, [-10, 10, -10, 10], 'r');
+    cbf_curve.LevelList = 0.0;
+    cbf_curve.LineWidth = 1.5;
+    hold on;
 
     delete(car); delete(car_head); delete(car_center);
-
-    car = draw_circle(center, car_radius, ...
-        'face_alpha', 0.1, 'face_color', palette.blue);
+    if isempty(cbfs)
+        car = draw_circle(center, car_radius, ...
+            'face_alpha', 0.1, 'face_color', palette.blue);
+    elseif cbfs(i) > 0
+        car = draw_circle(center, car_radius, ...
+            'face_alpha', 0.1, 'face_color', palette.blue);
+    else
+        car = draw_circle(center, car_radius, ...
+            'face_alpha', 0.5, 'face_color', palette.magenta);
+    end
+        
+    
     car_center = scatter(center(1), center(2), 40, 'x');
     car_center.MarkerEdgeColor = palette.blue;
     car_head = draw_circle(center + car_radius * unit_vector, head_radius, ...
         'face_alpha', 0.5, 'face_color', palette.green);
     
-
+    %% Draw target
+    if ~isempty(targets) && ~isempty(time_per_target)
+        index_t = floor(time_stamps(i) / time_per_target);
+            index_target = min(index_t + 1, num_target);
+        current_target = targets(:, index_target);
+        target = draw_circle(current_target, head_radius, ...
+        'face_alpha', 0.5, 'face_color', palette.blue);
+    end
+    
     pause(dt_frame);
 
     if save_video
         current_frame = getframe(gcf);
         writeVideo(vout, current_frame);
     end
+    delete(cbf_curve); 
+    delete(target);
 end
