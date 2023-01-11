@@ -114,6 +114,7 @@ for k = 1:n_reset
     us = [us, us_new(:, 1:index_last)];
 
     if ~end_with_reset || exit_flag
+        fprintf("Terminating the simulation because the rollout missed the reset or the rollout meet the exit condition.\n");
         % One step rollout terminated without hitting the reset. Terminate
         % the simulation here.
         break;
@@ -121,6 +122,10 @@ for k = 1:n_reset
         index_reset = [index_reset; length(ts)];
     end
     %% reset to next initial state.
+    if verbose_level >= 1
+        fprintf("------Resetting to next step------\n\n");
+    end
+    
     x0 = reset_map_function(xs_new(:, end)');
     t0 = ts_new(end);    
 end
@@ -165,6 +170,5 @@ function print_step_summary(i, log)
     disp(log.x_init');
     disp("Terminal state");
     disp(log.x_terminal');
-    fprintf("Time spent: %.3f \t end_with_event: %d \n", [log.T, log.end_with_event]);
-    fprintf("------Resetting to next step------\n\n");
+    fprintf("Time spent: %.3f \t End with reset: %d \n", [log.T, log.end_with_event]);
 end

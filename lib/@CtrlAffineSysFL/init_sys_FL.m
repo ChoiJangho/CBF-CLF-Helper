@@ -1,4 +1,7 @@
 function init_sys_FL(obj)
+    if obj.is_fl_initialized
+        return
+    end
 %% Functions that initialize dynamic system
     %% Symbolic Function
     if strcmp(obj.setup_option, 'symbolic')
@@ -73,4 +76,6 @@ function init_sys_FL(obj)
     if strcmp(obj.output_option, 'phase')
         obj.initClfFl(obj.params);
     end
+    
+    obj.is_fl_initialized = true;
 end
