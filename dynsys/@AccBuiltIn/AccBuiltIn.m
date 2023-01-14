@@ -6,6 +6,8 @@ classdef AccBuiltIn < CtrlAffineSys
     methods
         function obj = AccBuiltIn(params, varargin)
             % Always using built-in option for setup.
+            params.xdim = 3;
+            params.udim = 1;
             obj = obj@CtrlAffineSys(params, 'built-in', varargin{:});            
         end
         function Fr = getFr(obj, t, x)
