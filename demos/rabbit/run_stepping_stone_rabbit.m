@@ -58,7 +58,7 @@ close all; clear all;
 
 init_clf_simulation_rabbit;
 %% Control Barrier Function Parameters
-params.cbf.rate = 50;
+params.cbf_rate = 50;
 % Used in the cbf.
 params.gamma_b = 100;
 %% Settings for the Stepping stones
@@ -74,7 +74,8 @@ verbose_level = 1;
 params.steps_min = steps_min;
 params.steps_max = steps_max;
 rabbit_sys = RabbitBuiltIn(params);
-
+rabbit_sys.init_constraints(params, 'init_clf', false);
+rabbit_sys.set_constraints_mask("cbf_active", "all", "clf_active", "all");
 % Reflect model uncertainty here
 rabbit_sys.params.scale = 1.0;
 

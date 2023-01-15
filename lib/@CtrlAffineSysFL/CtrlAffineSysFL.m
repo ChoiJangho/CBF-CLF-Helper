@@ -2,6 +2,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
     %% Control-Affine Dynamic System with Feeback Linearization utilities
     properties
         output_option % output option
+        is_fl_initialized = false
         
         % Autonomous matrix of the Linearized output dynamics
         F_FL
@@ -311,4 +312,26 @@ classdef CtrlAffineSysFL < CtrlAffineSys
             l2f_y_min_exceed_ = obj.l2f_y_min_exceed_sym(x);
         end   
     end
+    methods(Static)
+        function extraout = append_mu_ref(extraout, mu_ref)
+            if isfield(extraout, 'mu_ref')
+                extraout.mu_ref = [extraout.mu_ref, mu_ref];
+            else
+                extraout.mu_ref = mu_ref;
+            end            
+        end
+        
+        function varargin_cell = remove_latest_mu_ref(varargin_cell)
+            for i = 1:2:length(varargin_cell)-1
+                if strcmp(varargin_cell(end-i), 'mu_ref')
+                    if i == 1
+                        varargin_cell = varargin_cell(1:end-i-1);
+                        return;
+                    end
+                    varargin_cell = varargin_cell([1:end-i-1,end-i+2:end]);
+                    return;
+                end
+            end
+        end
+    end    
 end

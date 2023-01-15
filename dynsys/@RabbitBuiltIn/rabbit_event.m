@@ -1,4 +1,4 @@
-function [value, isterminal, direction] = rabbit_event(obj,t, s)
+function [value, isterminal, direction] = rabbit_event(obj, t, s)
 % Define the event here to partition the simulation
 % according to event
 % RABBIT_EVENT: solve ode45 until the Rabbit's LeftToe

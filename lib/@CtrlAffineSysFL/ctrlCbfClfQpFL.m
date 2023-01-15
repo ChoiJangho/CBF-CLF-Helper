@@ -88,8 +88,8 @@ function [mu, extraout] = ctrlCbfClfQpFL(obj, t, x, varargin)
     
     %% Constraint : A[u; slack] <= b
     A = [LgV; -LgBs];
-    b = [-LfV - obj.clf_rate * V;
-        LfBs + obj.cbf_rate * Bs];
+    b = [-LfV - obj.clf_rate(obj.clf_active_mask) * V;
+        LfBs + obj.cbf_rate(obj.cbf_active_mask) .* Bs];
     if ~isempty(obj.u_max)
         A = [A; inv_LgLfy];
         b = [b; obj.u_max - u_star];
