@@ -96,4 +96,5 @@ global animation_scale
 animation_scale = rabbit_sys.params.scale;
 animation_dt = 0.05;
 x_quan_vec = coordinateTransformation(xs);
-anim_flat_ground(ts, x_quan_vec, animation_dt, true)
+% anim_flat_ground(ts, x_quan_vec, animation_dt, true)
+anim_flat_ground(ts', x_quan_vec', animation_dt, true)

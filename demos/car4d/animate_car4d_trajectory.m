@@ -11,7 +11,6 @@ function animate_car4d_trajectory(time_stamps, trajectory, varargin)
 %       x_range
 %       obstacle
 kwargs = parse_function_args(varargin{:});
-
 save_video = true;
 if isfield(kwargs, 'save_dir')
     save_video = true;
@@ -123,7 +122,7 @@ for i = 1: traj_length
     %% Draw CBF level set
     syms x y
     xo = obstacle.center(1);
-    yo = obstacle.center(2)
+    yo = obstacle.center(2);
     Ro = obstacle.radius;
     omega = 2;
     max_acc = 1;
@@ -177,6 +176,8 @@ for i = 1: traj_length
         current_frame = getframe(gcf);
         writeVideo(vout, current_frame);
     end
-    delete(cbf_curve); 
-    delete(target);
+    delete(cbf_curve);
+    if ~isempty(targets) && ~isempty(time_per_target)
+        delete(target);
+    end
 end

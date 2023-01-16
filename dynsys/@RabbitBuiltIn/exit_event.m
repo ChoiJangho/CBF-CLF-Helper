@@ -1,7 +1,7 @@
 function [exit_flag, last_valid] = exit_event(obj, xs)
 % Exit function
 % Argument
-%   xs : trajectory of the roobt
+%   xs : trajectory of the robot
 % Output
 %   exit_flag: judge if robot has fallen
 %   last_valid: return the last valid index of the trajectory
