@@ -84,6 +84,12 @@ function [u, extraout] = ctrl_clf_qp(obj, t, x, varargin)
     if size(u_ref_, 1) ~= obj.udim
         error("Wrong size of u_ref, it should be (udim, 1) array.");
     end
+
+    if ~isfield(kwargs, 'active_input_bound')
+        active_input_bound = true;
+    else
+        active_input_bound = kwargs.active_input_bound;
+    end
     
     tstart = tic;
     Vs = obj.clf(x);
@@ -91,23 +97,35 @@ function [u, extraout] = ctrl_clf_qp(obj, t, x, varargin)
     LfVs = obj.lf_clf(x);
     LgVs = obj.lg_clf(x);
 
+    if active_input_bound
+        u_max = obj.u_max(t, x);
+    else
+        u_max = [];
+    end
+
+    if active_input_bound
+        u_min = obj.u_min(t, x);
+    else
+        u_min = [];
+    end
+
     %% Constraints : A[u; slack] <= b
     A = LgVs;
     b = -LfVs - obj.clf_rate(obj.clf_active_mask) .* Vs;
-    if ~isempty(obj.u_max)
+    if ~isempty(u_max)
         A = [A; eye(obj.udim)];
-        b = [b; obj.u_max];
+        b = [b; u_max];
     end
-    if ~isempty(obj.u_min)
+    if ~isempty(u_min)
         A = [A; -eye(obj.udim)];
-        b = [b; -obj.u_min];
+        b = [b; -u_min];
     end
     if with_slack
         A_slack = -eye(n_clf);
-        if ~isempty(obj.u_max)
+        if ~isempty(u_max)
             A_slack = [A_slack; zeros(obj.udim, n_clf)];
         end
-        if ~isempty(obj.u_min)
+        if ~isempty(u_min)
             A_slack = [A_slack; zeros(obj.udim, n_clf)];
         end
         A = [A, A_slack];
@@ -135,7 +153,7 @@ function [u, extraout] = ctrl_clf_qp(obj, t, x, varargin)
             % constraint.
             if n_clf == 1
                 for i = 1:obj.udim
-                    u(i) = obj.u_min(i) * (LgVs(i) > 0) + obj.u_max(i) * (LgVs(i) <= 0);
+                    u(i) = u_min(i) * (LgVs(i) > 0) + u_max(i) * (LgVs(i) <= 0);
                 end
             end
             slack = zeros(n_clf, 1);
@@ -156,7 +174,7 @@ function [u, extraout] = ctrl_clf_qp(obj, t, x, varargin)
             % Making up best-effort heuristic solution.
             u = zeros(obj.udim, 1);
             for i = 1:obj.udim
-                u(i) = obj.u_min(i) * (LgVs(i) > 0) + obj.u_max(i) * (LgVs(i) <= 0);
+                u(i) = u_min(i) * (LgVs(i) > 0) + u_max(i) * (LgVs(i) <= 0);
             end
         else
             feas = 1;

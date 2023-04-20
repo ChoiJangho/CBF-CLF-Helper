@@ -54,6 +54,9 @@ end
         if isfield(result, 'LineWidth')
             p.LineWidth = result.LineWidth;
         end
+        if isfield(result, 'LineStyle')
+            p.LineStyle = result.LineStyle;
+        end
         hold on;       
     end
     ylabel("$y_{cm}$", "Interpreter", "latex");
@@ -72,13 +75,17 @@ end
             p_lts = [p_lts, p_lt([1, 3])];
         end
 
-        p = plot(p_lts(1, :), p_lts(2, :), '.', 'DisplayName', result.legend);
+        p = plot(p_lts(1, :), p_lts(2, :), 'DisplayName', result.legend);
         p.Color = colors_result(i_result, :);
         if isfield(result, 'Color')
             p.Color = result.Color;
         end
         if isfield(result, 'LineWidth')
             p.LineWidth = result.LineWidth;
+        end
+
+        if isfield(result, 'LineStyle')
+            p.LineStyle = result.LineStyle;
         end
         ylabel("$y_{sw}$", "Interpreter", "latex");
         xlabel("$x_{sw}$", "Interpreter", "latex");
@@ -99,6 +106,10 @@ end
         end
         if isfield(result, 'LineWidth')
             p.LineWidth = result.LineWidth;
+        end
+
+        if isfield(result, 'LineStyle')
+            p.LineStyle = result.LineStyle;
         end
         hold on;
     end
@@ -125,6 +136,10 @@ function fig = plot_rabbit_state_history_single(result)
     if isfield(result, 'LineWidth')
         p.LineWidth = result.LineWidth;
     end
+
+    if isfield(result, 'LineStyle')
+        p.LineStyle = result.LineStyle;
+    end    
     hold on;       
     ylabel("$y_{cm}$", "Interpreter", "latex");
     xlabel("$x_{cm}$", "Interpreter", "latex");
@@ -148,6 +163,10 @@ function fig = plot_rabbit_state_history_single(result)
     if isfield(result, 'LineWidth')
         p.LineWidth = result.LineWidth;
     end
+
+    if isfield(result, 'LineStyle')
+        p.LineStyle = result.LineStyle;
+    end
     ylabel("$y_{sw}$", "Interpreter", "latex");
     xlabel("$x_{sw}$", "Interpreter", "latex");
     hold on;
@@ -162,6 +181,10 @@ function fig = plot_rabbit_state_history_single(result)
     end
     if isfield(result, 'LineWidth')
         p.LineWidth = result.LineWidth;
+    end
+
+    if isfield(result, 'LineStyle')
+        p.LineStyle = result.LineStyle;
     end
     hold on;
 
