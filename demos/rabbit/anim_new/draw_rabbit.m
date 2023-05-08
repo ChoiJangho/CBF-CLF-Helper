@@ -1,16 +1,37 @@
-function draw_rabbit(fig, x, draw_simple, transparency)
-if nargin < 3
-    draw_simple = false;
+function draw_rabbit(fig, x, varargin)
+
+kwargs = parse_function_args(varargin{:});
+
+draw_simple = false;
+if isfield(kwargs, 'draw_simple')
+    draw_simple = kwargs.draw_simple;
 end
-if nargin < 4
-    transparency = 0.0;
+
+transparency = 0;
+if isfield(kwargs, 'transparency')
+    transparency = kwargs.transparency;
 end
+
+leg_line_width = 10;
+if isfield(kwargs, 'leg_line_width')
+    leg_line_width = kwargs.leg_line_width;
+end
+
+torso_line_width = 14;
+if isfield(kwargs, 'torso_line_width')
+    torso_line_width = kwargs.torso_line_width;
+end
+
+
 
 if ndims(x) >= 2
     if size(x, 1) ~= 14 && size(x, 2) ~=1
         error("This function only accept 1D array.")
     end
 end
+
+
+
 
 % ours to quans
 qrel = x(3:7);
@@ -60,12 +81,19 @@ out.ymass_femurs=mr_femurs*sin(param);
 out.xmass_torso=mr_torso*cos(param);
 out.ymass_torso=mr_torso*sin(param);
 
-draw_stance_leg(out, robot_color, draw_simple, transparency);
-draw_swing_leg(out, robot_color, draw_simple, transparency);
-draw_torso(out, robot_color, draw_simple, transparency);
+draw_stance_leg(out, robot_color, draw_simple, transparency, 'line_width', leg_line_width);
+draw_swing_leg(out, robot_color, draw_simple, transparency, 'line_width', leg_line_width);
+draw_torso(out, robot_color, draw_simple, transparency, 'line_width', torso_line_width);
 end
 
-function draw_stance_leg(out, robot_color, draw_simple, t)
+function draw_stance_leg(out, robot_color, draw_simple, t, varargin)
+kwargs = parse_function_args(varargin{:});
+
+line_width = 10;
+if isfield(kwargs, 'line_width')
+    line_width = kwargs.line_width;
+end
+
 white = [1, 1, 1];
 tibia1=line([out.pFoot11 out.pG11],[out.pFoot12 out.pG12], 'LineWidth', 5);
 femur1=line([out.pG11 out.pH1],[out.pG12 out.pH2], 'LineWidth', 5);
@@ -78,13 +106,20 @@ else
           (1-t) * robot_color.leg1_joint_edge_color + t * white, 'LineWidth', 1.5);
 end
 % set(tibia1,'LineWidth',5,'Color',(1-t) * robot_color.leg1_color + t * white);
-set(tibia1,'LineWidth',10,'Color', [robot_color.leg1_color, 1-t]);
+set(tibia1,'LineWidth',line_width,'Color', [robot_color.leg1_color, 1-t]);
  
 % set(femur1,'LineWidth',5,'Color',(1-t) * robot_color.leg1_color + t * white);
-set(femur1,'LineWidth',10,'Color', [robot_color.leg1_color, 1-t]);
+set(femur1,'LineWidth',line_width,'Color', [robot_color.leg1_color, 1-t]);
 end
 
-function draw_swing_leg(out, robot_color, draw_simple, t)
+function draw_swing_leg(out, robot_color, draw_simple, t, varargin)
+kwargs = parse_function_args(varargin{:});
+
+line_width = 10;
+if isfield(kwargs, 'line_width')
+    line_width = kwargs.line_width;
+end
+
 white = [1, 1, 1];
 
 tibia2=line([out.pFoot21 out.pG21],[out.pFoot22 out.pG22], 'LineWidth', 5);
@@ -99,13 +134,19 @@ else
 end  
 
 % set(tibia2,'LineWidth',5,'Color', (1-t) * robot_color.leg2_color + t * white);
-set(tibia2,'LineWidth',10,'Color', [robot_color.leg2_color, 1-t]);
+set(tibia2,'LineWidth',line_width,'Color', [robot_color.leg2_color, 1-t]);
 % set(femur2,'LineWidth',5,'Color', (1-t) * robot_color.leg2_color + t * white);
-set(femur2,'LineWidth',10,'Color', [robot_color.leg2_color, 1-t]);
+set(femur2,'LineWidth',line_width,'Color', [robot_color.leg2_color, 1-t]);
 
 end
 
-function draw_torso(out, robot_color, draw_simple, t)
+function draw_torso(out, robot_color, draw_simple, t, varargin)
+kwargs = parse_function_args(varargin{:});
+line_width = 10;
+if isfield(kwargs, 'line_width')
+    line_width = kwargs.line_width;
+end
+
 white = [1, 1, 1];
 
 torso=line([out.pH1 out.pHead1],[out.pH2 out.pHead2]);
@@ -122,7 +163,7 @@ torso=line([out.pH1 out.pHead1],[out.pH2 out.pHead2]);
 % end
 
 % set(torso,'LineWidth',7,'Color',(1-t) * robot_color.torso_color + t * white);
-set(torso,'LineWidth',14,'Color',[robot_color.torso_color, 1-t]);
+set(torso,'LineWidth',line_width,'Color',[robot_color.torso_color, 1-t]);
 
 if draw_simple
     femur_mass2=patch(out.xmass_femurs+out.pFem21,out.ymass_femurs+out.pFem22, ...

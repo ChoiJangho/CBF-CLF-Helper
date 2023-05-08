@@ -122,9 +122,14 @@ classdef RabbitBuiltIn < CtrlAffineSysFL
             y_ = ya-yd;
         end
         
-%         function phase_ = phase(obj, x)
-%             % TODO: Rabbit's phase => redundant(?)
-%         end
+        function phases = phase(obj, xs)
+            % TODO: Rabbit's phase => redundant(?)
+            n = obj.xdim/2;
+            q = xs(1:n, :);
+            theta = q(3, :) + q(4, :) + q(5, :)/2;
+            
+            phases = (theta - obj.theta_init)/(obj.theta_end - obj.theta_init);
+        end
         
         function Lfy = lf_y(obj, x)
             % TODO: Not used in RABBIT
